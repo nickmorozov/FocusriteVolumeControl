@@ -2,16 +2,20 @@
 //  FocusriteVolumeControlApp.swift
 //  FocusriteVolumeControl
 //
-//  Created by Nick Morozov on 2026-01-26.
+//  Menu bar app for controlling Focusrite Scarlett volume
 //
 
 import SwiftUI
 
 @main
 struct FocusriteVolumeControlApp: App {
+    // Use AppDelegate for menu bar functionality
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        // Empty Settings scene (required but not used for menu bar app)
+        Settings {
+            EmptyView()
         }
     }
 }

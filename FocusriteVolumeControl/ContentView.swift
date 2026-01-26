@@ -2,20 +2,15 @@
 //  ContentView.swift
 //  FocusriteVolumeControl
 //
-//  Created by Nick Morozov on 2026-01-26.
+//  This file is not used - see PopoverView.swift for the main UI
 //
 
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        Text("This view is not used. See PopoverView for the menu bar UI.")
+            .padding()
     }
 }
 
