@@ -2,124 +2,135 @@
 //  VolumeController.swift
 //  FocusriteVolumeControl
 //
-//  High-level volume control logic for Focusrite devices
+//  High-level volume control logic for Focusrite devices.
+//  Uses a pluggable backend (AppleScript now, AES70 API later).
 //
 
 import Foundation
 import Combine
 
 /// Manages volume, mute, and direct monitor controls
+/// This is the Controller in our MVC architecture
 class VolumeController: ObservableObject {
 
-    // MARK: - Published State
+    // MARK: - Published State (for UI binding)
 
-    @Published var volume: Double = -20.0  // dB
-    @Published var isMuted: Bool = false
-    @Published var isDirectMonitorEnabled: Bool = false
+    @Published var playbackVolume: Double = 0.0  // dB
+    @Published var playbackMuted: Bool = false
+
+    @Published var input1Volume: Double = 0.0
+    @Published var input1Muted: Bool = false
+
+    @Published var input2Volume: Double = 0.0
+    @Published var input2Muted: Bool = false
+
+    @Published var directMonitorEnabled: Bool = false
+
+    @Published var isConnected: Bool = false
+    @Published var statusMessage: String = "Initializing..."
 
     // MARK: - Configuration
 
     @Published var stepSize: Double = 3.0  // dB per step
+    let minVolume: Double = -127.0
+    let maxVolume: Double = 6.0
 
     // MARK: - Private Properties
 
-    private let client: FocusriteClient
+    private let backend: VolumeBackend
     private var cancellables = Set<AnyCancellable>()
 
-    // Discovered item IDs
-    private var outputGainId: String?
-    private var directMonitorGainIds: [String] = []
-    private var muteId: String?
-
-    // Mute state tracking
+    // Pre-mute volume for restore
     private var preMuteVolume: Double = -20.0
-
-    // Volume range
-    private let minVolume: Double = -70.0
-    private let maxVolume: Double = 6.0
-    private let muteValue: Double = -128.0
 
     // MARK: - Initialization
 
-    init(client: FocusriteClient) {
-        self.client = client
+    init(backend: VolumeBackend) {
+        self.backend = backend
         setupBindings()
     }
 
+    /// Convenience init with default AppleScript backend
+    convenience init() {
+        self.init(backend: AppleScriptBackend())
+    }
+
     private func setupBindings() {
-        // When items change, discover controls
-        client.$items
+        // Observe backend state changes
+        backend.statePublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] items in
-                self?.discoverControls(items: items)
+            .sink { [weak self] state in
+                self?.updateFromBackendState(state)
             }
             .store(in: &cancellables)
+    }
 
-        // Track volume changes from device
-        client.onVolumeChange = { [weak self] itemId, value in
-            guard let self = self else { return }
+    private func updateFromBackendState(_ state: VolumeState) {
+        playbackVolume = state.playbackVolume
+        playbackMuted = state.playbackMuted
+        input1Volume = state.input1Volume
+        input1Muted = state.input1Muted
+        input2Volume = state.input2Volume
+        input2Muted = state.input2Muted
+        directMonitorEnabled = state.directMonitorEnabled
+        isConnected = state.isConnected
+        statusMessage = state.statusMessage
+    }
 
-            if itemId == self.outputGainId {
-                DispatchQueue.main.async {
-                    self.volume = value
-                    self.isMuted = value <= self.minVolume
+    // MARK: - Connection
+
+    func connect() {
+        Task {
+            let result = await backend.connect()
+            if case .error(let msg) = result {
+                await MainActor.run {
+                    self.statusMessage = msg
+                    self.isConnected = false
                 }
             }
         }
     }
 
-    // MARK: - Control Discovery
+    func disconnect() {
+        backend.disconnect()
+    }
 
-    private func discoverControls(items: [String: DeviceItem]) {
-        outputGainId = nil
-        directMonitorGainIds = []
-        muteId = nil
+    func refresh() {
+        Task {
+            _ = await backend.refresh()
+        }
+    }
 
-        for (id, item) in items {
-            // Look for output gain (first one found)
-            // In the Focusrite protocol, output gains are often near the start
-            if outputGainId == nil, let value = Double(item.value), value >= minVolume && value <= maxVolume {
-                outputGainId = id
-                volume = value
-                isMuted = value <= minVolume
-                print("Found output gain: \(id) = \(value)")
+    // MARK: - Playback Volume Control
+
+    func setPlaybackVolume(_ newVolume: Double) {
+        let clamped = max(minVolume, min(maxVolume, newVolume))
+        Task {
+            let result = await backend.setPlaybackVolume(clamped)
+            if case .error(let msg) = result {
+                print("Failed to set playback volume: \(msg)")
             }
         }
     }
 
-    // MARK: - Volume Control
-
-    func setVolume(_ newVolume: Double) {
-        guard let gainId = outputGainId else {
-            print("No output gain control found")
-            return
-        }
-
-        let clamped = max(minVolume, min(maxVolume, newVolume))
-        client.setValue(itemId: gainId, value: String(format: "%.1f", clamped))
-        volume = clamped
-        isMuted = false
-    }
-
-    func volumeUp() {
-        if isMuted {
+    func playbackVolumeUp() {
+        if playbackMuted {
             unmute()
             return
         }
-
-        let newVolume = min(maxVolume, volume + stepSize)
-        setVolume(newVolume)
+        let newVolume = min(maxVolume, playbackVolume + stepSize)
+        setPlaybackVolume(newVolume)
     }
 
-    func volumeDown() {
-        let newVolume = max(minVolume, volume - stepSize)
-        setVolume(newVolume)
+    func playbackVolumeDown() {
+        let newVolume = max(minVolume, playbackVolume - stepSize)
+        setPlaybackVolume(newVolume)
     }
 
     // MARK: - Mute Control
 
     func toggleMute() {
-        if isMuted {
+        if playbackMuted {
             unmute()
         } else {
             mute()
@@ -127,47 +138,94 @@ class VolumeController: ObservableObject {
     }
 
     func mute() {
-        guard let gainId = outputGainId else { return }
-
         // Save current volume before muting
-        if volume > minVolume {
-            preMuteVolume = volume
+        if playbackVolume > minVolume {
+            preMuteVolume = playbackVolume
         }
 
-        client.setValue(itemId: gainId, value: String(format: "%.1f", muteValue))
-        isMuted = true
+        Task {
+            let result = await backend.setPlaybackMuted(true)
+            if case .error(let msg) = result {
+                print("Failed to mute: \(msg)")
+            }
+        }
     }
 
     func unmute() {
-        guard let gainId = outputGainId else { return }
+        Task {
+            let result = await backend.setPlaybackMuted(false)
+            if case .error(let msg) = result {
+                print("Failed to unmute: \(msg)")
+            }
+        }
+    }
 
-        let restoreVolume = preMuteVolume > minVolume ? preMuteVolume : -20.0
-        client.setValue(itemId: gainId, value: String(format: "%.1f", restoreVolume))
-        volume = restoreVolume
-        isMuted = false
+    // MARK: - Input 1 Control
+
+    func setInput1Volume(_ newVolume: Double) {
+        let clamped = max(minVolume, min(maxVolume, newVolume))
+        Task {
+            _ = await backend.setInput1Volume(clamped)
+        }
+    }
+
+    func toggleInput1Mute() {
+        Task {
+            _ = await backend.setInput1Muted(!input1Muted)
+        }
+    }
+
+    // MARK: - Input 2 Control
+
+    func setInput2Volume(_ newVolume: Double) {
+        let clamped = max(minVolume, min(maxVolume, newVolume))
+        Task {
+            _ = await backend.setInput2Volume(clamped)
+        }
+    }
+
+    func toggleInput2Mute() {
+        Task {
+            _ = await backend.setInput2Muted(!input2Muted)
+        }
     }
 
     // MARK: - Direct Monitor Control
 
-    func enableDirectMonitor() {
-        for gainId in directMonitorGainIds {
-            client.setValue(itemId: gainId, value: "0.0")
+    func toggleDirectMonitor() {
+        Task {
+            _ = await backend.setDirectMonitorEnabled(!directMonitorEnabled)
         }
-        isDirectMonitorEnabled = true
+    }
+
+    func enableDirectMonitor() {
+        Task {
+            _ = await backend.setDirectMonitorEnabled(true)
+        }
     }
 
     func disableDirectMonitor() {
-        for gainId in directMonitorGainIds {
-            client.setValue(itemId: gainId, value: String(format: "%.1f", muteValue))
+        Task {
+            _ = await backend.setDirectMonitorEnabled(false)
         }
-        isDirectMonitorEnabled = false
     }
 
-    func toggleDirectMonitor() {
-        if isDirectMonitorEnabled {
-            disableDirectMonitor()
-        } else {
-            enableDirectMonitor()
-        }
+    // MARK: - Legacy Compatibility (for existing UI)
+
+    // Aliases for backward compatibility
+    var volume: Double {
+        get { playbackVolume }
+        set { setPlaybackVolume(newValue) }
     }
+
+    var isMuted: Bool {
+        get { playbackMuted }
+    }
+
+    var isDirectMonitorEnabled: Bool {
+        get { directMonitorEnabled }
+    }
+
+    func volumeUp() { playbackVolumeUp() }
+    func volumeDown() { playbackVolumeDown() }
 }

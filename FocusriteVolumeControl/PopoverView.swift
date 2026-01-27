@@ -8,17 +8,16 @@
 import SwiftUI
 
 struct PopoverView: View {
-    @ObservedObject var client: FocusriteClient
     @ObservedObject var volumeController: VolumeController
 
     var body: some View {
         VStack(spacing: 16) {
             // Header with connection status
-            HeaderView(client: client)
+            HeaderView(volumeController: volumeController)
 
             Divider()
 
-            if client.isApproved {
+            if volumeController.isConnected {
                 // Volume controls
                 VolumeControlView(volumeController: volumeController)
 
@@ -26,12 +25,9 @@ struct PopoverView: View {
 
                 // Additional controls
                 AdditionalControlsView(volumeController: volumeController)
-            } else if client.isConnected {
-                // Waiting for approval
-                ApprovalWaitingView()
             } else {
                 // Not connected
-                NotConnectedView(client: client)
+                NotConnectedView(volumeController: volumeController)
             }
 
             Divider()
@@ -47,7 +43,7 @@ struct PopoverView: View {
 // MARK: - Header View
 
 struct HeaderView: View {
-    @ObservedObject var client: FocusriteClient
+    @ObservedObject var volumeController: VolumeController
 
     var body: some View {
         HStack {
@@ -57,26 +53,27 @@ struct HeaderView: View {
                 .frame(width: 8, height: 8)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(client.deviceModel ?? "Focusrite Control")
+                Text("Focusrite Control")
                     .font(.headline)
 
-                Text(client.connectionStatus)
+                Text(volumeController.statusMessage)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             Spacer()
+
+            // Refresh button
+            Button(action: { volumeController.refresh() }) {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.plain)
+            .help("Refresh")
         }
     }
 
     private var statusColor: Color {
-        if client.isApproved {
-            return .green
-        } else if client.isConnected {
-            return .yellow
-        } else {
-            return .red
-        }
+        volumeController.isConnected ? .green : .red
     }
 }
 
@@ -87,24 +84,24 @@ struct VolumeControlView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // Volume slider
+            // Playback volume slider
             HStack {
                 Button(action: { volumeController.toggleMute() }) {
-                    Image(systemName: volumeController.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                        .foregroundColor(volumeController.isMuted ? .red : .primary)
+                    Image(systemName: volumeController.playbackMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                        .foregroundColor(volumeController.playbackMuted ? .red : .primary)
                 }
                 .buttonStyle(.plain)
-                .help(volumeController.isMuted ? "Unmute" : "Mute")
+                .help(volumeController.playbackMuted ? "Unmute" : "Mute")
 
                 Slider(
                     value: Binding(
-                        get: { volumeController.volume },
-                        set: { volumeController.setVolume($0) }
+                        get: { volumeController.playbackVolume },
+                        set: { volumeController.setPlaybackVolume($0) }
                     ),
                     in: -70...6,
-                    step: 0.5
+                    step: 1.0
                 )
-                .disabled(volumeController.isMuted)
+                .disabled(volumeController.playbackMuted)
 
                 Text(volumeString)
                     .font(.system(.body, design: .monospaced))
@@ -129,10 +126,10 @@ struct VolumeControlView: View {
     }
 
     private var volumeString: String {
-        if volumeController.isMuted {
+        if volumeController.playbackMuted {
             return "MUTE"
         } else {
-            return String(format: "%.1f dB", volumeController.volume)
+            return String(format: "%.0f dB", volumeController.playbackVolume)
         }
     }
 }
@@ -143,58 +140,54 @@ struct AdditionalControlsView: View {
     @ObservedObject var volumeController: VolumeController
 
     var body: some View {
-        HStack {
+        VStack(spacing: 8) {
+            // Direct Monitor toggle
+            Toggle("Direct Monitor", isOn: Binding(
+                get: { volumeController.directMonitorEnabled },
+                set: { _ in volumeController.toggleDirectMonitor() }
+            ))
+
             // Step size picker
-            Picker("Step", selection: $volumeController.stepSize) {
-                Text("1 dB").tag(1.0)
-                Text("3 dB").tag(3.0)
-                Text("6 dB").tag(6.0)
+            HStack {
+                Text("Step:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Picker("", selection: $volumeController.stepSize) {
+                    Text("1 dB").tag(1.0)
+                    Text("3 dB").tag(3.0)
+                    Text("6 dB").tag(6.0)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 150)
+
+                Spacer()
             }
-            .pickerStyle(.segmented)
-            .frame(width: 150)
-
-            Spacer()
         }
-    }
-}
-
-// MARK: - Approval Waiting View
-
-struct ApprovalWaitingView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundColor(.yellow)
-
-            Text("Waiting for Approval")
-                .font(.headline)
-
-            Text("Please approve this app in Focusrite Control 2:\nSettings → Remote Devices")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
     }
 }
 
 // MARK: - Not Connected View
 
 struct NotConnectedView: View {
-    @ObservedObject var client: FocusriteClient
+    @ObservedObject var volumeController: VolumeController
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "wifi.slash")
+            Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
-                .foregroundColor(.secondary)
+                .foregroundColor(.yellow)
 
             Text("Not Connected")
                 .font(.headline)
 
-            Button("Reconnect") {
-                client.connect()
+            Text(volumeController.statusMessage)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Connect") {
+                volumeController.connect()
             }
             .buttonStyle(.bordered)
         }
@@ -230,8 +223,5 @@ struct FooterView: View {
 // MARK: - Preview
 
 #Preview {
-    PopoverView(
-        client: FocusriteClient(),
-        volumeController: VolumeController(client: FocusriteClient())
-    )
+    PopoverView(volumeController: VolumeController())
 }

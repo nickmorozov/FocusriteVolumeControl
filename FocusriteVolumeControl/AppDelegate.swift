@@ -4,6 +4,13 @@
 //
 //  Menu bar app delegate
 //
+//  TODO:
+//  1. add button to restart server
+//  2. add menu with about and preferences
+//  3. by default system vol+-/mute should be used with options to override and reset
+//  4. option to start on sys startup
+//  5. option to restart server automatically if connection is lost
+//
 
 import Cocoa
 import SwiftUI
@@ -16,7 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
 
-    let focusriteClient = FocusriteClient()
+    // Volume controller with AppleScript backend
     var volumeController: VolumeController!
 
     private var cancellables = Set<AnyCancellable>()
@@ -28,8 +35,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - App Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Initialize volume controller
-        volumeController = VolumeController(client: focusriteClient)
+        // Initialize volume controller with AppleScript backend
+        volumeController = VolumeController()
 
         // Set up menu bar
         setupMenuBar()
@@ -37,21 +44,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up global hotkeys
         setupHotkeys()
 
-        // Start Focusrite Control server if needed and connect
-        startServerAndConnect()
+        // Connect to FC2 via AppleScript
+        volumeController.connect()
 
         // Observe connection state to update icon
-        focusriteClient.$isConnected
-            .combineLatest(focusriteClient.$isApproved)
+        volumeController.$isConnected
+            .combineLatest(volumeController.$playbackMuted)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isConnected, isApproved in
-                self?.updateStatusIcon(connected: isConnected, approved: isApproved)
+            .sink { [weak self] isConnected, isMuted in
+                self?.updateStatusIcon(connected: isConnected, muted: isMuted)
             }
             .store(in: &cancellables)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        focusriteClient.disconnect()
+        volumeController.disconnect()
         removeHotkeys()
     }
 
@@ -68,15 +75,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Create popover
         popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 200)
+        popover.contentSize = NSSize(width: 280, height: 250)
         popover.behavior = .transient
         popover.animates = true
 
         // Set content view
-        let contentView = PopoverView(
-            client: focusriteClient,
-            volumeController: volumeController
-        )
+        let contentView = PopoverView(volumeController: volumeController)
         popover.contentViewController = NSHostingController(rootView: contentView)
     }
 
@@ -93,29 +97,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func updateStatusIcon(connected: Bool, approved: Bool) {
+    private func updateStatusIcon(connected: Bool, muted: Bool) {
         guard let button = statusItem.button else { return }
 
         let iconName: String
         if !connected {
             iconName = "speaker.slash"
-        } else if !approved {
-            iconName = "speaker.badge.exclamationmark"
-        } else if volumeController.isMuted {
+        } else if muted {
             iconName = "speaker.slash.fill"
         } else {
             iconName = "speaker.wave.2.fill"
         }
 
         button.image = NSImage(systemSymbolName: iconName, accessibilityDescription: "Volume")
-    }
-
-    // MARK: - Server Management
-
-    private func startServerAndConnect() {
-        // Just connect directly - the server should be running if Focusrite Control 2 is installed
-        // (We can't start the server from a sandboxed app as it requires sudo)
-        focusriteClient.connect()
     }
 
     // MARK: - Global Hotkeys
@@ -157,6 +151,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Update icon on mute change
-        updateStatusIcon(connected: focusriteClient.isConnected, approved: focusriteClient.isApproved)
+        updateStatusIcon(connected: volumeController.isConnected, muted: volumeController.playbackMuted)
     }
 }
