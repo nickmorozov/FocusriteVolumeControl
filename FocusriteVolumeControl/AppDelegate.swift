@@ -207,11 +207,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let prefsView = PreferencesView(volumeController: volumeController)
         let hostingController = NSHostingController(rootView: prefsView)
 
+        // Let the window size itself to fit the SwiftUI content
+        let fittingSize = hostingController.sizeThatFits(in: NSSize(width: 400, height: CGFloat.greatestFiniteMagnitude))
+
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Preferences"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 380, height: 580))
-        window.center()
+        window.setContentSize(fittingSize)
+
+        // Position window under the menu bar icon
+        if let button = statusItem.button {
+            let buttonRect = button.window?.convertToScreen(button.frame) ?? .zero
+            let windowWidth = fittingSize.width
+            let windowHeight = fittingSize.height
+
+            // Center horizontally under the icon, position below menu bar
+            let x = buttonRect.midX - windowWidth / 2
+            let y = buttonRect.minY - windowHeight - 15  // 15pt gap below menu bar
+
+            window.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            window.center()
+        }
+
         window.isReleasedWhenClosed = false
 
         preferencesWindow = window

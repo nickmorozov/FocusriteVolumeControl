@@ -13,8 +13,7 @@ struct PreferencesView: View {
     @ObservedObject var launchAtLogin = LaunchAtLoginManager.shared
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 20) {
                 // General Section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("General")
@@ -127,12 +126,12 @@ struct PreferencesView: View {
 
                 Divider()
 
-                // Keyboard Shortcuts Section
-                ShortcutsSectionView(shortcutManager: shortcutManager)
-            }
-            .padding()
+            // Keyboard Shortcuts Section
+            ShortcutsSectionView(shortcutManager: shortcutManager)
         }
-        .frame(width: 380, height: 580)
+        .padding()
+        .frame(width: 380)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

@@ -642,4 +642,156 @@ final class VolumeControllerTests: XCTestCase {
             XCTAssertEqual(db, -16.0, accuracy: 1.0)
         }
     }
+
+    // MARK: - Allow Gain Tests
+
+    func testAllowGain_DefaultIsFalse() {
+        XCTAssertFalse(controller.allowGain)
+    }
+
+    func testMaxVolume_WhenAllowGainFalse_IsZero() {
+        controller.allowGain = false
+        XCTAssertEqual(controller.maxVolume, 0.0)
+    }
+
+    func testMaxVolume_WhenAllowGainTrue_IsSix() {
+        controller.allowGain = true
+        XCTAssertEqual(controller.maxVolume, 6.0)
+    }
+
+    func testSetPlaybackVolume_WhenAllowGainFalse_ClampsToZero() async throws {
+        controller.allowGain = false
+        controller.setPlaybackVolume(5.0)  // Try to set above 0 dB
+        try await waitForStateUpdate()
+
+        let volumeCalls = calls(named: "setPlaybackVolume")
+        XCTAssertFalse(volumeCalls.isEmpty)
+        XCTAssertEqual(volumeCalls.last?.parameters["db"], "0.0")
+    }
+
+    func testSetPlaybackVolume_WhenAllowGainTrue_AllowsPositiveDb() async throws {
+        controller.allowGain = true
+        controller.setPlaybackVolume(5.0)
+        try await waitForStateUpdate()
+
+        let volumeCalls = calls(named: "setPlaybackVolume")
+        XCTAssertFalse(volumeCalls.isEmpty)
+        XCTAssertEqual(volumeCalls.last?.parameters["db"], "5.0")
+    }
+
+    func testSetPlaybackVolume_WhenAllowGainTrue_ClampsToSixDb() async throws {
+        controller.allowGain = true
+        controller.setPlaybackVolume(10.0)  // Above +6 dB max
+        try await waitForStateUpdate()
+
+        let volumeCalls = calls(named: "setPlaybackVolume")
+        XCTAssertFalse(volumeCalls.isEmpty)
+        XCTAssertEqual(volumeCalls.last?.parameters["db"], "6.0")
+    }
+
+    func testVolumeUp_WhenAllowGainTrue_CanGoAboveZero() async throws {
+        controller.allowGain = true
+        mockBackend.setPlaybackVolumeState(0.0)
+        try await waitForStateUpdate()
+
+        mockBackend.clearCalls()
+        controller.volumeUp()
+        try await waitForStateUpdate()
+
+        let volumeCalls = calls(named: "setPlaybackVolume")
+        if !volumeCalls.isEmpty {
+            if let dbString = volumeCalls.last?.parameters["db"],
+               let db = Double(dbString) {
+                XCTAssertGreaterThan(db, 0.0)
+            }
+        }
+    }
+
+    func testVolumeUp_WhenAllowGainFalse_StopsAtZero() async throws {
+        controller.allowGain = false
+        mockBackend.setPlaybackVolumeState(-1.0)
+        try await waitForStateUpdate()
+
+        mockBackend.clearCalls()
+        controller.volumeUp()
+        try await waitForStateUpdate()
+
+        let volumeCalls = calls(named: "setPlaybackVolume")
+        if !volumeCalls.isEmpty {
+            if let dbString = volumeCalls.last?.parameters["db"],
+               let db = Double(dbString) {
+                XCTAssertLessThanOrEqual(db, 0.0)
+            }
+        }
+    }
+
+    // MARK: - Backend Type Tests
+
+    func testBackendType_DefaultIsAppleScript() {
+        XCTAssertEqual(controller.backendType, .appleScript)
+    }
+
+    func testRestart_CallsDisconnectThenConnect() async throws {
+        mockBackend.clearCalls()
+        controller.restart()
+        try await waitForStateUpdate()
+
+        let disconnectCalls = calls(named: "disconnect")
+        let connectCalls = calls(named: "connect")
+
+        XCTAssertFalse(disconnectCalls.isEmpty, "restart should call disconnect")
+        XCTAssertFalse(connectCalls.isEmpty, "restart should call connect")
+
+        // Verify disconnect happens before connect
+        if let disconnectIndex = mockBackend.calls.firstIndex(where: { $0.method == "disconnect" }),
+           let connectIndex = mockBackend.calls.firstIndex(where: { $0.method == "connect" }) {
+            XCTAssertLessThan(disconnectIndex, connectIndex, "disconnect should happen before connect")
+        }
+    }
+
+    // MARK: - Ensure Direct Monitor Tests
+
+    func testEnsureDirectMonitorOn_DefaultIsTrue() {
+        XCTAssertTrue(controller.ensureDirectMonitorOn)
+    }
+
+    func testSetPlaybackVolume_WhenEnsureDirectMonitorOn_EnablesDirectMonitor() async throws {
+        controller.ensureDirectMonitorOn = true
+        mockBackend.setMockState(VolumeState(directMonitorEnabled: false, isConnected: true))
+        try await waitForStateUpdate()
+
+        mockBackend.clearCalls()
+        controller.setPlaybackVolume(-20.0)
+        try await waitForStateUpdate()
+
+        let directMonitorCalls = calls(named: "setDirectMonitorEnabled")
+        XCTAssertFalse(directMonitorCalls.isEmpty, "should enable direct monitor before volume change")
+        XCTAssertEqual(directMonitorCalls.first?.parameters["enabled"], "true")
+    }
+
+    func testSetPlaybackVolume_WhenEnsureDirectMonitorOff_DoesNotEnableDirectMonitor() async throws {
+        controller.ensureDirectMonitorOn = false
+        mockBackend.setMockState(VolumeState(directMonitorEnabled: false, isConnected: true))
+        try await waitForStateUpdate()
+
+        mockBackend.clearCalls()
+        controller.setPlaybackVolume(-20.0)
+        try await waitForStateUpdate()
+
+        let directMonitorCalls = calls(named: "setDirectMonitorEnabled")
+        XCTAssertTrue(directMonitorCalls.isEmpty, "should not enable direct monitor when setting is off")
+    }
+
+    func testSetPlaybackVolume_WhenDirectMonitorAlreadyOn_DoesNotCallAgain() async throws {
+        controller.ensureDirectMonitorOn = true
+        mockBackend.setMockState(VolumeState(directMonitorEnabled: true, isConnected: true))
+        try await waitForStateUpdate()
+
+        mockBackend.clearCalls()
+        controller.setPlaybackVolume(-20.0)
+        try await waitForStateUpdate()
+
+        let directMonitorCalls = calls(named: "setDirectMonitorEnabled")
+        XCTAssertTrue(directMonitorCalls.isEmpty, "should not call setDirectMonitorEnabled when already on")
+    }
 }
