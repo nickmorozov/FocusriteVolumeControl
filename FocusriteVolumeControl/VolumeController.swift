@@ -36,8 +36,11 @@ class VolumeController: ObservableObject {
     @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
     @Published var playVolumeSound: Bool = true  // Play system sound on volume change for audio feedback
     @Published var ensureDirectMonitorOn: Bool = true  // Auto-enable Direct Monitor before volume changes
+    @Published var allowGain: Bool = false  // Allow volume above 0dB (up to +6dB)
     let minVolume: Double = -127.0  // FC2's actual minimum
-    let maxVolume: Double = 0.0  // Unity gain, no boost allowed
+
+    /// Maximum volume depends on allowGain setting
+    var maxVolume: Double { allowGain ? 6.0 : 0.0 }
 
     // MARK: - Private Properties
 

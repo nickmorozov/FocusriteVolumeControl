@@ -1,7 +1,8 @@
 [DONE] Preferences -> Keyboard Shortcuts section: by default system vol+-/mute are used with options to override and reset. Available shortcuts: volume up, volume down, mute, direct monitor.
+[DONE] option to start on sys startup (Launch at Login using SMAppService)
+[DONE] option to allow gain (0db to 6db). there should be a tick on the slider for 0. and unless the option is enabled you shouldn't be able to go above the tick either with moouse of shortcut.
 add an option to choose which approach to use - FC server or FC app via applescript (first option will noot work for now)
 add button to restart server/app manually (depending on what's chosen)
-option to start on sys startup
 
 === Roadmap ===
 Focusrite Control Protocol/Server support
@@ -10,3 +11,5 @@ Shortcuts to switch presets and change inputs volume, with e.g., shift or contro
 
 === Known Issues ===
 - Mute button causes popover to shift a few pixels when menu bar is set to "Always Hidden". This appears to be a macOS/SwiftUI interaction issue with auto-hiding menu bars and popover repositioning.
+- Mute button causes popover to shift to the left edge of the screen if Menubar is Hidden.
+- Increment value does not correspond to db changed.

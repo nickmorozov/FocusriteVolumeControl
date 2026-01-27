@@ -22,6 +22,8 @@ struct PopoverView: View {
                 // Volume controls
                 VolumeControlView(volumeController: volumeController)
 
+                Divider()
+
                 // Increment slider
                 IncrementSliderView(volumeController: volumeController)
             } else {
@@ -132,28 +134,46 @@ struct VolumeControlView: View {
             .help("Volume Down")
             .disabled(volumeController.playbackMuted)
 
-            // Volume slider
-            Slider(
-                value: Binding(
-                    get: { displayValue },
-                    set: { dragValue = $0 }
-                ),
-                in: -127...0,
-                step: 1.0,
-                onEditingChanged: { editing in
-                    isDragging = editing
-                    if editing {
-                        // Start dragging - capture current value
-                        dragValue = volumeController.playbackVolume
-                        pendingValue = nil
-                    } else {
-                        // End dragging - commit final value
-                        pendingValue = dragValue
-                        volumeController.setPlaybackVolume(dragValue)
+            // Volume slider with 0dB tick mark
+            ZStack(alignment: .top) {
+                Slider(
+                    value: Binding(
+                        get: { displayValue },
+                        set: { newValue in
+                            // Clamp to 0dB unless gain is allowed
+                            dragValue = volumeController.allowGain ? newValue : min(newValue, 0)
+                        }
+                    ),
+                    in: -127...6,
+                    onEditingChanged: { editing in
+                        isDragging = editing
+                        if editing {
+                            // Start dragging - capture current value
+                            dragValue = volumeController.playbackVolume
+                            pendingValue = nil
+                        } else {
+                            // End dragging - commit final value
+                            pendingValue = dragValue
+                            volumeController.setPlaybackVolume(dragValue)
+                        }
                     }
+                )
+                .disabled(volumeController.playbackMuted)
+
+                // 0dB tick mark overlay
+                GeometryReader { geo in
+                    // Account for slider thumb padding (thumb doesn't go to edges)
+                    let thumbRadius: CGFloat = 10
+                    let trackWidth = geo.size.width - 2 * thumbRadius
+                    let tickPositionInTrack = trackWidth * (127.0 / 133.0)  // 0dB is 127 units from -127 in a 133 unit range
+                    let tickPosition = thumbRadius + tickPositionInTrack
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.6))
+                        .frame(width: 1, height: 6)
+                        .offset(x: tickPosition - 0.5, y: geo.size.height - 3)
                 }
-            )
-            .disabled(volumeController.playbackMuted)
+            }
+            .frame(height: 22)
             .onChange(of: volumeController.playbackVolume) { _, newValue in
                 // Clear pending when backend confirms (within tolerance)
                 if let pending = pendingValue, abs(newValue - pending) < 1.5 {
@@ -179,6 +199,8 @@ struct VolumeControlView: View {
     private var volumeString: String {
         if volumeController.playbackMuted {
             return "MUTE"
+        } else if displayValue > 0 {
+            return String(format: "+%.0f dB", displayValue)
         } else {
             return String(format: "%.0f dB", displayValue)
         }

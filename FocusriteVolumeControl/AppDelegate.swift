@@ -135,7 +135,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenu.addItem(NSMenuItem.separator())
 
         // Reconnect
-        let reconnectItem = NSMenuItem(title: "Reconnect to FC2", action: #selector(reconnect), keyEquivalent: "r")
+        let reconnectItem = NSMenuItem(title: "Reconnect to Focusrite Control 2", action: #selector(reconnect), keyEquivalent: "r")
         reconnectItem.target = self
         statusMenu.addItem(reconnectItem)
 
@@ -210,7 +210,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Preferences"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 380, height: 420))
+        window.setContentSize(NSSize(width: 380, height: 470))
         window.center()
         window.isReleasedWhenClosed = false
 

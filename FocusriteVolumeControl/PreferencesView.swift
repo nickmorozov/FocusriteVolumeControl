@@ -10,6 +10,7 @@ import SwiftUI
 struct PreferencesView: View {
     @ObservedObject var volumeController: VolumeController
     @ObservedObject var shortcutManager = ShortcutManager.shared
+    @ObservedObject var launchAtLogin = LaunchAtLoginManager.shared
 
     var body: some View {
         ScrollView {
@@ -20,6 +21,16 @@ struct PreferencesView: View {
                         .font(.headline)
 
                     VStack(alignment: .leading, spacing: 10) {
+                        // Launch at Login toggle
+                        VStack(alignment: .leading, spacing: 2) {
+                            Toggle("Launch at Login", isOn: $launchAtLogin.isEnabled)
+
+                            Text("Start automatically when you log in")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 20)
+                        }
+
                         // Keep FC2 Minimized toggle with subtitle
                         VStack(alignment: .leading, spacing: 2) {
                             Toggle("Keep Focusrite Control 2 Minimized", isOn: $volumeController.keepFC2Minimized)
@@ -49,6 +60,16 @@ struct PreferencesView: View {
                                 .foregroundColor(.secondary)
                                 .padding(.leading, 20)
                         }
+
+                        // Allow Gain toggle with subtitle
+                        VStack(alignment: .leading, spacing: 2) {
+                            Toggle("Allow Gain (0 to +6 dB)", isOn: $volumeController.allowGain)
+
+                            Text("Enable volume boost above unity gain")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 20)
+                        }
                     }
                 }
 
@@ -59,7 +80,7 @@ struct PreferencesView: View {
             }
             .padding()
         }
-        .frame(width: 380, height: 420)
+        .frame(width: 380, height: 470)
     }
 }
 
