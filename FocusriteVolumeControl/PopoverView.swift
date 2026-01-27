@@ -188,6 +188,10 @@ struct AdditionalControlsView: View {
             Toggle("Keep FC2 Minimized", isOn: $volumeController.keepFC2Minimized)
                 .help("Minimize Focusrite Control 2 on connect")
 
+            // Volume sound feedback toggle
+            Toggle("Play Volume Sound", isOn: $volumeController.playVolumeSound)
+                .help("Play system sound on volume change")
+
             // Speed picker
             HStack {
                 Text("Speed:")

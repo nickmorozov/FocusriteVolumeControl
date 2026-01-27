@@ -214,39 +214,37 @@ class AppleScriptBackend: VolumeBackend {
     // MARK: - FC2 Window Control
 
     /// Minimize FC2 window to Dock (if not already minimized)
-    /// Volume changes work on minimized windows - user confirmed
+    /// Uses AXMinimized attribute for reliable detection
     func minimizeFC2IfNeeded() async {
-        // Check if window exists (no window = already minimized)
-        let checkScript = """
+        // Check AXMinimized attribute - most reliable way to detect minimized state
+        let checkAndMinimizeScript = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                return (count of windows) as text
+                if (count of windows) = 0 then
+                    return "no_windows"
+                end if
+                set isMin to value of attribute "AXMinimized" of window 1
+                if isMin then
+                    return "already_minimized"
+                end if
             end tell
         end tell
+        -- Window is not minimized, minimize it
+        tell application "\(fc2Process)"
+            activate
+        end tell
+        delay 0.1
+        tell application "System Events"
+            keystroke "m" using command down
+        end tell
+        return "minimized"
         """
 
         do {
-            let windowCount = try await runOsascript(checkScript)
-
-            if windowCount == "0" {
-                logger.info("📦 FC2 already minimized (no windows)")
-                return
+            let result = try await runOsascript(checkAndMinimizeScript)
+            if result == "minimized" {
+                logger.info("📦 FC2: \(result, privacy: .public)")
             }
-
-            // Activate FC2 briefly then Cmd+M to minimize
-            logger.info("📦 Minimizing FC2...")
-            let minimizeScript = """
-            tell application "\(fc2Process)"
-                activate
-            end tell
-            delay 0.1
-            tell application "System Events"
-                keystroke "m" using command down
-            end tell
-            return "minimized"
-            """
-            let result = try await runOsascript(minimizeScript)
-            logger.info("📦 FC2 minimize result: \(result, privacy: .public)")
         } catch {
             logger.warning("⚠️ Failed to minimize FC2: \(error.localizedDescription, privacy: .public)")
         }

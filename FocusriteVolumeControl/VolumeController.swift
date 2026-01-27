@@ -8,6 +8,7 @@
 
 import Foundation
 import Combine
+import AppKit  // For NSSound
 
 /// Manages volume, mute, and direct monitor controls
 /// This is the Controller in our MVC architecture
@@ -33,6 +34,7 @@ class VolumeController: ObservableObject {
 
     @Published var stepSize: Double = 5.0  // Percentage per step (Normal speed)
     @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
+    @Published var playVolumeSound: Bool = true  // Play system sound on volume change for audio feedback
     let minVolume: Double = -127.0  // FC2's actual minimum
     let maxVolume: Double = 0.0  // Unity gain, no boost allowed
 
@@ -124,9 +126,26 @@ class VolumeController: ObservableObject {
                 let result = await self.backend.setPlaybackVolume(clamped)
                 if case .error(let msg) = result {
                     print("Failed to set playback volume: \(msg)")
+                } else {
+                    await MainActor.run { self.playVolumeFeedback() }
                 }
+                await self.minimizeFC2IfNeeded()
             }
         }
+    }
+
+    /// Minimize FC2 if the setting is enabled
+    private func minimizeFC2IfNeeded() async {
+        let shouldMinimize = await MainActor.run { keepFC2Minimized }
+        if shouldMinimize {
+            await backend.minimizeFC2IfNeeded()
+        }
+    }
+
+    /// Play system sound for volume feedback if enabled
+    private func playVolumeFeedback() {
+        guard playVolumeSound else { return }
+        NSSound.beep()
     }
 
     func playbackVolumeUp() {
@@ -205,12 +224,14 @@ class VolumeController: ObservableObject {
         let clamped = max(minVolume, min(maxVolume, newVolume))
         Task {
             _ = await backend.setInput1Volume(clamped)
+            await minimizeFC2IfNeeded()
         }
     }
 
     func toggleInput1Mute() {
         Task {
             _ = await backend.setInput1Muted(!input1Muted)
+            await minimizeFC2IfNeeded()
         }
     }
 
@@ -220,12 +241,14 @@ class VolumeController: ObservableObject {
         let clamped = max(minVolume, min(maxVolume, newVolume))
         Task {
             _ = await backend.setInput2Volume(clamped)
+            await minimizeFC2IfNeeded()
         }
     }
 
     func toggleInput2Mute() {
         Task {
             _ = await backend.setInput2Muted(!input2Muted)
+            await minimizeFC2IfNeeded()
         }
     }
 
@@ -234,18 +257,21 @@ class VolumeController: ObservableObject {
     func toggleDirectMonitor() {
         Task {
             _ = await backend.setDirectMonitorEnabled(!directMonitorEnabled)
+            await minimizeFC2IfNeeded()
         }
     }
 
     func enableDirectMonitor() {
         Task {
             _ = await backend.setDirectMonitorEnabled(true)
+            await minimizeFC2IfNeeded()
         }
     }
 
     func disableDirectMonitor() {
         Task {
             _ = await backend.setDirectMonitorEnabled(false)
+            await minimizeFC2IfNeeded()
         }
     }
 
