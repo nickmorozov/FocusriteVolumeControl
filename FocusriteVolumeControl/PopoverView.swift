@@ -84,7 +84,7 @@ struct VolumeControlView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // Playback volume slider
+            // Playback volume slider (dB scale, integer values)
             HStack {
                 Button(action: { volumeController.toggleMute() }) {
                     Image(systemName: volumeController.playbackMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
@@ -98,14 +98,14 @@ struct VolumeControlView: View {
                         get: { volumeController.playbackVolume },
                         set: { volumeController.setPlaybackVolume($0) }
                     ),
-                    in: -70...6,
+                    in: -127...0,
                     step: 1.0
                 )
                 .disabled(volumeController.playbackMuted)
 
                 Text(volumeString)
                     .font(.system(.body, design: .monospaced))
-                    .frame(width: 60, alignment: .trailing)
+                    .frame(width: 55, alignment: .trailing)
             }
 
             // Volume buttons
@@ -147,16 +147,23 @@ struct AdditionalControlsView: View {
                 set: { _ in volumeController.toggleDirectMonitor() }
             ))
 
-            // Step size picker
+            // Speed picker
             HStack {
-                Text("Step:")
+                Text("Speed:")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                Picker("", selection: $volumeController.stepSize) {
-                    Text("1 dB").tag(1.0)
-                    Text("3 dB").tag(3.0)
-                    Text("6 dB").tag(6.0)
+                Picker("", selection: Binding(
+                    get: { volumeController.stepSize },
+                    set: { newValue in
+                        DispatchQueue.main.async {
+                            volumeController.stepSize = newValue
+                        }
+                    }
+                )) {
+                    Text("Slow").tag(3.0)
+                    Text("Normal").tag(5.0)
+                    Text("Fast").tag(8.0)
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 150)

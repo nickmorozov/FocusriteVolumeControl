@@ -2,21 +2,19 @@
 //  AppleScriptBackend.swift
 //  FocusriteVolumeControl
 //
-//  AppleScript-based backend for controlling FC2 via macOS Accessibility APIs.
-//  This approach works by automating the FC2 UI directly.
+//  Controls Focusrite Control 2 via osascript (command-line AppleScript).
+//  Uses the same approach as the working Node.js volume-control.js script.
 //
 
 import Foundation
 import Combine
 
-/// AppleScript-based volume control backend
-/// Controls Focusrite Control 2 via UI automation
+/// AppleScript-based volume control backend using osascript subprocess
 class AppleScriptBackend: VolumeBackend {
 
     // MARK: - Constants
 
     private let fc2Process = "Focusrite Control 2"
-    private let fc2Window = "Focusrite Control 2"
 
     // MARK: - State
 
@@ -38,8 +36,8 @@ class AppleScriptBackend: VolumeBackend {
     // MARK: - Connection
 
     func connect() async -> VolumeResult {
-        // (a) Ensure FC2 is running, Direct tab is active, window is minimized
-        let result = await ensureFC2Ready()
+        // Ensure FC2 is running and Direct tab is active
+        let result = await ensureDirectTab()
         if case .error = result {
             return result
         }
@@ -55,7 +53,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func refresh() async -> VolumeResult {
-        // Read all current values
         do {
             let playbackVol = try await readSliderValue(channel: "Playback 1 - 2")
             let playbackMute = try await readMuteState(channel: "Playback 1 - 2")
@@ -96,9 +93,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func setPlaybackVolume(_ db: Double) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setSliderValue(channel: "Playback 1 - 2", db: db)
             _state.playbackVolume = db
@@ -111,9 +105,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func setPlaybackMuted(_ muted: Bool) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setMuteState(channel: "Playback 1 - 2", muted: muted)
             _state.playbackMuted = muted
@@ -136,9 +127,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func setInput1Volume(_ db: Double) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setSliderValue(channel: "Analogue 1", db: db)
             _state.input1Volume = db
@@ -150,9 +138,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func setInput1Muted(_ muted: Bool) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setMuteState(channel: "Analogue 1", muted: muted)
             _state.input1Muted = muted
@@ -175,9 +160,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func setInput2Volume(_ db: Double) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setSliderValue(channel: "Analogue 2", db: db)
             _state.input2Volume = db
@@ -189,9 +171,6 @@ class AppleScriptBackend: VolumeBackend {
     }
 
     func setInput2Muted(_ muted: Bool) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setMuteState(channel: "Analogue 2", muted: muted)
             _state.input2Muted = muted
@@ -205,9 +184,6 @@ class AppleScriptBackend: VolumeBackend {
     // MARK: - Direct Monitor
 
     func setDirectMonitorEnabled(_ enabled: Bool) async -> VolumeResult {
-        let result = await ensureFC2Ready()
-        if case .error = result { return result }
-
         do {
             try await setDirectMonitor(enabled: enabled)
             _state.directMonitorEnabled = enabled
@@ -218,52 +194,23 @@ class AppleScriptBackend: VolumeBackend {
         }
     }
 
-    // MARK: - AppleScript Helpers
+    // MARK: - AppleScript Commands via osascript
 
-    /// (a) Boilerplate: Ensure FC2 is running, Direct tab active, window exists (minimized OK)
-    private func ensureFC2Ready() async -> VolumeResult {
+    /// Ensure FC2 is running and Direct tab is active
+    private func ensureDirectTab() async -> VolumeResult {
         let script = """
         tell application "System Events"
-            -- Check if FC2 is running
             if not (exists process "\(fc2Process)") then
-                -- Try to launch it
-                tell application "\(fc2Process)" to activate
-                delay 2
-                if not (exists process "\(fc2Process)") then
-                    error "Focusrite Control 2 is not running"
-                end if
+                error "Focusrite Control 2 is not running"
             end if
-
             tell process "\(fc2Process)"
-                -- Ensure window exists
-                if (count of windows) = 0 then
-                    -- Bring app to front to create window
-                    set frontmost to true
-                    delay 0.5
-                end if
-
-                -- Check if main window exists
-                if not (exists window "\(fc2Window)") then
-                    error "Could not find Focusrite Control 2 window"
-                end if
-
-                -- Click Direct tab if not already selected
-                set directCheckbox to checkbox "Direct" of group "Navigation bar" of window "\(fc2Window)"
-                if value of directCheckbox is 0 then
-                    click directCheckbox
-                    delay 0.3
-                end if
-
-                -- Minimize if not already (optional - keeps it out of the way)
-                -- We actually want to keep it accessible but not in the way
-                -- Minimizing might break accessibility, so we just leave it
+                click checkbox "Direct" of group "Navigation bar" of window "\(fc2Process)"
             end tell
         end tell
-        return "ready"
         """
 
         do {
-            _ = try await runAppleScript(script)
+            _ = try await runOsascript(script)
             return .success
         } catch {
             return .error(error.localizedDescription)
@@ -275,13 +222,12 @@ class AppleScriptBackend: VolumeBackend {
         let script = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                set sliderValue to value of slider "Level" of group "\(channel)" of group 5 of window "\(fc2Window)"
-                return sliderValue
+                return value of slider "Level" of group "\(channel)" of group 5 of window "\(fc2Process)"
             end tell
         end tell
         """
 
-        let result = try await runAppleScript(script)
+        let result = try await runOsascript(script)
         return parseDbValue(result)
     }
 
@@ -291,12 +237,12 @@ class AppleScriptBackend: VolumeBackend {
         let script = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                set value of slider "Level" of group "\(channel)" of group 5 of window "\(fc2Window)" to "\(dbString)"
+                set value of slider "Level" of group "\(channel)" of group 5 of window "\(fc2Process)" to "\(dbString)"
             end tell
         end tell
         """
 
-        _ = try await runAppleScript(script)
+        _ = try await runOsascript(script)
     }
 
     /// Read mute state from a channel group
@@ -304,12 +250,12 @@ class AppleScriptBackend: VolumeBackend {
         let script = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                return value of checkbox "Mute" of group "\(channel)" of group 5 of window "\(fc2Window)"
+                return value of checkbox "Mute" of group "\(channel)" of group 5 of window "\(fc2Process)"
             end tell
         end tell
         """
 
-        let result = try await runAppleScript(script)
+        let result = try await runOsascript(script)
         return result.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
     }
 
@@ -319,7 +265,7 @@ class AppleScriptBackend: VolumeBackend {
         let script = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                set cb to checkbox "Mute" of group "\(channel)" of group 5 of window "\(fc2Window)"
+                set cb to checkbox "Mute" of group "\(channel)" of group 5 of window "\(fc2Process)"
                 if (value of cb) is not \(targetValue) then
                     click cb
                 end if
@@ -327,7 +273,7 @@ class AppleScriptBackend: VolumeBackend {
         end tell
         """
 
-        _ = try await runAppleScript(script)
+        _ = try await runOsascript(script)
     }
 
     /// Read Direct Monitor state
@@ -335,22 +281,24 @@ class AppleScriptBackend: VolumeBackend {
         let script = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                return value of checkbox "Direct Monitor" of window "\(fc2Window)"
+                return value of checkbox "Direct Monitor" of window "\(fc2Process)"
             end tell
         end tell
         """
 
-        let result = try await runAppleScript(script)
-        return result.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
+        let result = try await runOsascript(script)
+        // FC2 returns "true" or "false" as strings
+        return result.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "true"
     }
 
     /// Set Direct Monitor state
     private func setDirectMonitor(enabled: Bool) async throws {
-        let targetValue = enabled ? 1 : 0
+        // FC2 returns true/false for checkbox values
+        let targetValue = enabled ? "true" : "false"
         let script = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                set cb to checkbox "Direct Monitor" of window "\(fc2Window)"
+                set cb to checkbox "Direct Monitor" of window "\(fc2Process)"
                 if (value of cb) is not \(targetValue) then
                     click cb
                 end if
@@ -358,33 +306,50 @@ class AppleScriptBackend: VolumeBackend {
         end tell
         """
 
-        _ = try await runAppleScript(script)
+        _ = try await runOsascript(script)
     }
 
-    // MARK: - Utilities
+    // MARK: - osascript Execution
 
-    /// Run AppleScript and return result
-    private func runAppleScript(_ script: String) async throws -> String {
+    /// Run AppleScript via osascript subprocess (same as Node.js script)
+    private func runOsascript(_ script: String) async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                var error: NSDictionary?
-                let appleScript = NSAppleScript(source: script)
-                let result = appleScript?.executeAndReturnError(&error)
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+                process.arguments = ["-e", script]
 
-                if let error = error {
-                    let message = error[NSAppleScript.errorMessage] as? String ?? "Unknown AppleScript error"
-                    continuation.resume(throwing: VolumeBackendError.appleScriptError(message))
-                } else {
-                    continuation.resume(returning: result?.stringValue ?? "")
+                let stdout = Pipe()
+                let stderr = Pipe()
+                process.standardOutput = stdout
+                process.standardError = stderr
+
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+
+                    let outputData = stdout.fileHandleForReading.readDataToEndOfFile()
+                    let errorData = stderr.fileHandleForReading.readDataToEndOfFile()
+
+                    if process.terminationStatus != 0 {
+                        let errorMessage = String(data: errorData, encoding: .utf8) ?? "Unknown error"
+                        continuation.resume(throwing: VolumeBackendError.appleScriptError(errorMessage))
+                    } else {
+                        let output = String(data: outputData, encoding: .utf8) ?? ""
+                        continuation.resume(returning: output.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
+                } catch {
+                    continuation.resume(throwing: error)
                 }
             }
         }
     }
 
+    // MARK: - Utilities
+
     /// Parse dB string like "-6dB" or "0dB" to Double
     private func parseDbValue(_ str: String) -> Double {
         let cleaned = str.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Remove "dB" suffix and parse
         let numStr = cleaned.replacingOccurrences(of: "dB", with: "")
                             .replacingOccurrences(of: " ", with: "")
         return Double(numStr) ?? 0.0

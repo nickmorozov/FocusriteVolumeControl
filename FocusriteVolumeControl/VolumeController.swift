@@ -31,9 +31,9 @@ class VolumeController: ObservableObject {
 
     // MARK: - Configuration
 
-    @Published var stepSize: Double = 3.0  // dB per step
-    let minVolume: Double = -127.0
-    let maxVolume: Double = 6.0
+    @Published var stepSize: Double = 5.0  // Percentage per step (Normal speed)
+    let minVolume: Double = -127.0  // FC2's actual minimum
+    let maxVolume: Double = 0.0  // Unity gain, no boost allowed
 
     // MARK: - Private Properties
 
@@ -56,25 +56,31 @@ class VolumeController: ObservableObject {
     }
 
     private func setupBindings() {
-        // Observe backend state changes
+        // Observe backend state changes - use async to avoid view update conflicts
         backend.statePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.updateFromBackendState(state)
+                // Dispatch async to break out of any view update cycle
+                DispatchQueue.main.async {
+                    self?.updateFromBackendState(state)
+                }
             }
             .store(in: &cancellables)
     }
 
     private func updateFromBackendState(_ state: VolumeState) {
-        playbackVolume = state.playbackVolume
-        playbackMuted = state.playbackMuted
-        input1Volume = state.input1Volume
-        input1Muted = state.input1Muted
-        input2Volume = state.input2Volume
-        input2Muted = state.input2Muted
-        directMonitorEnabled = state.directMonitorEnabled
-        isConnected = state.isConnected
-        statusMessage = state.statusMessage
+        // Only update if values actually changed to minimize view updates
+        if playbackVolume != state.playbackVolume { playbackVolume = state.playbackVolume }
+        // Derive muted state from volume level (volume-based mute)
+        let isMuted = state.playbackVolume <= minVolume
+        if playbackMuted != isMuted { playbackMuted = isMuted }
+        if input1Volume != state.input1Volume { input1Volume = state.input1Volume }
+        if input1Muted != state.input1Muted { input1Muted = state.input1Muted }
+        if input2Volume != state.input2Volume { input2Volume = state.input2Volume }
+        if input2Muted != state.input2Muted { input2Muted = state.input2Muted }
+        if directMonitorEnabled != state.directMonitorEnabled { directMonitorEnabled = state.directMonitorEnabled }
+        if isConnected != state.isConnected { isConnected = state.isConnected }
+        if statusMessage != state.statusMessage { statusMessage = state.statusMessage }
     }
 
     // MARK: - Connection
@@ -104,30 +110,64 @@ class VolumeController: ObservableObject {
     // MARK: - Playback Volume Control
 
     func setPlaybackVolume(_ newVolume: Double) {
-        let clamped = max(minVolume, min(maxVolume, newVolume))
-        Task {
-            let result = await backend.setPlaybackVolume(clamped)
-            if case .error(let msg) = result {
-                print("Failed to set playback volume: \(msg)")
+        // FC2 only accepts integer dB values - round to nearest int
+        let rounded = round(newVolume)
+        let clamped = max(minVolume, min(maxVolume, rounded))
+        // Dispatch async to avoid SwiftUI view update conflicts
+        DispatchQueue.main.async {
+            Task {
+                let result = await self.backend.setPlaybackVolume(clamped)
+                if case .error(let msg) = result {
+                    print("Failed to set playback volume: \(msg)")
+                }
             }
         }
     }
 
     func playbackVolumeUp() {
         if playbackMuted {
+            // Unmute and restore previous volume
             unmute()
             return
         }
-        let newVolume = min(maxVolume, playbackVolume + stepSize)
-        setPlaybackVolume(newVolume)
+        // Step in percentage, ensure at least 1 dB change
+        let currentDb = round(playbackVolume)
+        let currentPercent = dbToPercent(currentDb)
+        let newPercent = min(100, currentPercent + stepSize)
+        var newDb = round(percentToDb(newPercent))
+
+        // If rounding resulted in same dB, force at least 1 dB change
+        if newDb <= currentDb && currentDb < maxVolume {
+            newDb = currentDb + 1
+        }
+        if newDb > maxVolume { newDb = maxVolume }
+        setPlaybackVolume(newDb)
     }
 
     func playbackVolumeDown() {
-        let newVolume = max(minVolume, playbackVolume - stepSize)
-        setPlaybackVolume(newVolume)
+        if playbackMuted {
+            return
+        }
+        // Step in percentage, ensure at least 1 dB change
+        let currentDb = round(playbackVolume)
+        let currentPercent = dbToPercent(currentDb)
+        let newPercent = max(0, currentPercent - stepSize)
+        var newDb = round(percentToDb(newPercent))
+
+        // If rounding resulted in same dB, force at least 1 dB change
+        if newDb >= currentDb && currentDb > minVolume {
+            newDb = currentDb - 1
+        }
+        if newDb < minVolume { newDb = minVolume }
+
+        if newDb <= minVolume {
+            mute()
+        } else {
+            setPlaybackVolume(newDb)
+        }
     }
 
-    // MARK: - Mute Control
+    // MARK: - Mute Control (volume-based: min volume = muted)
 
     func toggleMute() {
         if playbackMuted {
@@ -138,26 +178,20 @@ class VolumeController: ObservableObject {
     }
 
     func mute() {
-        // Save current volume before muting
+        // Save current volume before muting (only if not already at min)
         if playbackVolume > minVolume {
             preMuteVolume = playbackVolume
         }
 
-        Task {
-            let result = await backend.setPlaybackMuted(true)
-            if case .error(let msg) = result {
-                print("Failed to mute: \(msg)")
-            }
-        }
+        // Set to minimum volume (acts as mute)
+        // playbackMuted will be derived from volume in updateFromBackendState
+        setPlaybackVolume(minVolume)
     }
 
     func unmute() {
-        Task {
-            let result = await backend.setPlaybackMuted(false)
-            if case .error(let msg) = result {
-                print("Failed to unmute: \(msg)")
-            }
-        }
+        // Restore previous volume
+        // playbackMuted will be derived from volume in updateFromBackendState
+        setPlaybackVolume(preMuteVolume)
     }
 
     // MARK: - Input 1 Control
@@ -210,9 +244,44 @@ class VolumeController: ObservableObject {
         }
     }
 
-    // MARK: - Legacy Compatibility (for existing UI)
+    // MARK: - dB to Percentage Conversion (Perceptual Curve)
+    // 0% = -127 dB (silence), 50% = -16 dB (half volume), 100% = 0 dB (full)
+    // Uses power curve where 50% of travel = -16 dB
+    // Exponent ~0.197 satisfies: 127 * 0.5^0.197 - 127 = -16
 
-    // Aliases for backward compatibility
+    private let curveExponent: Double = 0.197  // Calculated for 50% = -16 dB with 127 range
+
+    /// Convert dB to percentage (0-100) - perceptual curve
+    func dbToPercent(_ db: Double) -> Double {
+        // Inverse: percent = 100 * ((dB + 127) / 127)^(1/exponent)
+        guard db < 0 else { return 100 }
+        guard db > -127 else { return 0 }
+        let normalized = (db + 127) / 127  // 0 to 1
+        return max(0, min(100, 100 * pow(normalized, 1 / curveExponent)))
+    }
+
+    /// Convert percentage (0-100) to dB - perceptual curve
+    func percentToDb(_ percent: Double) -> Double {
+        // dB = 127 * (percent/100)^exponent - 127
+        // At 50%: 127 * 0.5^0.197 - 127 ≈ -16 dB
+        guard percent > 0 else { return -127 }
+        guard percent < 100 else { return 0 }
+        let p = percent / 100
+        return max(-127, min(0, 127 * pow(p, curveExponent) - 127))
+    }
+
+    /// Get playback volume as percentage
+    var playbackPercent: Double {
+        get { dbToPercent(playbackVolume) }
+    }
+
+    /// Set playback volume from percentage
+    func setPlaybackPercent(_ percent: Double) {
+        setPlaybackVolume(percentToDb(percent))
+    }
+
+    // MARK: - Legacy Compatibility
+
     var volume: Double {
         get { playbackVolume }
         set { setPlaybackVolume(newValue) }

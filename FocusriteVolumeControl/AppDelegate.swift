@@ -2,19 +2,25 @@
 //  AppDelegate.swift
 //  FocusriteVolumeControl
 //
-//  Menu bar app delegate
+//  Menu bar app delegate - intercepts system volume keys for Focusrite control
 //
 //  TODO:
 //  1. add button to restart server
 //  2. add menu with about and preferences
-//  3. by default system vol+-/mute should be used with options to override and reset
-//  4. option to start on sys startup
-//  5. option to restart server automatically if connection is lost
-//
+//  3. option to start on sys startup
+//  4. option to restart server automatically if connection is lost
 
 import Cocoa
 import SwiftUI
 import Combine
+
+// Media key codes (from IOKit/hidsystem/ev_keymap.h)
+private let NX_KEYTYPE_SOUND_UP: Int = 0
+private let NX_KEYTYPE_SOUND_DOWN: Int = 1
+private let NX_KEYTYPE_MUTE: Int = 7
+
+// System-defined event type (NX_SYSDEFINED = 14)
+private let kCGEventTypeSystemDefined: CGEventType = CGEventType(rawValue: 14)!
 
 class AppDelegate: NSObject, NSApplicationDelegate {
 
@@ -28,9 +34,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var cancellables = Set<AnyCancellable>()
 
-    // Global event monitor for hotkeys
-    private var globalMonitor: Any?
-    private var localMonitor: Any?
+    // CGEventTap for intercepting media keys
+    private var eventTap: CFMachPort?
+    private var runLoopSource: CFRunLoopSource?
 
     // MARK: - App Lifecycle
 
@@ -41,8 +47,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up menu bar
         setupMenuBar()
 
-        // Set up global hotkeys
-        setupHotkeys()
+        // Set up media key interception (blocks system volume)
+        setupMediaKeyTap()
 
         // Connect to FC2 via AppleScript
         volumeController.connect()
@@ -59,7 +65,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         volumeController.disconnect()
-        removeHotkeys()
+        removeMediaKeyTap()
     }
 
     // MARK: - Menu Bar Setup
@@ -91,8 +97,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         } else {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-
-            // Make popover the key window
             popover.contentViewController?.view.window?.makeKey()
         }
     }
@@ -112,45 +116,110 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         button.image = NSImage(systemSymbolName: iconName, accessibilityDescription: "Volume")
     }
 
-    // MARK: - Global Hotkeys
+    // MARK: - Media Key Tap (intercepts and blocks system volume)
 
-    private func setupHotkeys() {
-        // Monitor for media keys and custom shortcuts
-        // Note: This requires Accessibility permissions on macOS
+    private func setupMediaKeyTap() {
+        // Event mask for system-defined events (media keys)
+        let eventMask: CGEventMask = 1 << kCGEventTypeSystemDefined.rawValue
 
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleKeyEvent(event)
+        // Create event tap - requires Accessibility permissions
+        eventTap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,  // Can modify/block events
+            eventsOfInterest: eventMask,
+            callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+                guard let refcon = refcon else {
+                    return Unmanaged.passRetained(event)
+                }
+                let appDelegate = Unmanaged<AppDelegate>.fromOpaque(refcon).takeUnretainedValue()
+                return appDelegate.handleCGEvent(proxy: proxy, type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        )
+
+        guard let eventTap = eventTap else {
+            print("⚠️ Failed to create event tap - grant Accessibility permissions in System Settings")
+            return
         }
 
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleKeyEvent(event)
-            return event
-        }
+        // Add to run loop
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+        CGEvent.tapEnable(tap: eventTap, enable: true)
+
+        print("✅ Media key tap installed - system volume keys now control Focusrite only")
     }
 
-    private func removeHotkeys() {
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
+    private func removeMediaKeyTap() {
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
         }
-        if let monitor = localMonitor {
-            NSEvent.removeMonitor(monitor)
+        if let source = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }
+        eventTap = nil
+        runLoopSource = nil
     }
 
-    private func handleKeyEvent(_ event: NSEvent) {
-        // F13, F14, F15 keys (or customize as needed)
-        switch event.keyCode {
-        case 105: // F13
-            volumeController.volumeDown()
-        case 107: // F14
-            volumeController.volumeUp()
-        case 113: // F15
-            volumeController.toggleMute()
+    private func handleCGEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        // Re-enable tap if system disabled it
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let tap = eventTap {
+                CGEvent.tapEnable(tap: tap, enable: true)
+            }
+            return Unmanaged.passRetained(event)
+        }
+
+        // Only handle system-defined events
+        guard type == kCGEventTypeSystemDefined else {
+            return Unmanaged.passRetained(event)
+        }
+
+        // Convert to NSEvent to parse media key data
+        guard let nsEvent = NSEvent(cgEvent: event) else {
+            return Unmanaged.passRetained(event)
+        }
+
+        // Check for media key subtype (8 = NX_SUBTYPE_AUX_CONTROL_BUTTONS)
+        guard nsEvent.subtype.rawValue == 8 else {
+            return Unmanaged.passRetained(event)
+        }
+
+        // Parse key data from data1
+        let data1 = nsEvent.data1
+        let keyCode = (data1 & 0xFFFF0000) >> 16
+        let keyFlags = data1 & 0x0000FFFF
+        let keyState = (keyFlags & 0xFF00) >> 8
+        let keyDown = keyState == 0x0A
+
+        // Only handle key down
+        guard keyDown else {
+            return nil  // Suppress key up too
+        }
+
+        // Handle volume keys - return nil to block system handling
+        switch keyCode {
+        case NX_KEYTYPE_SOUND_UP:
+            DispatchQueue.main.async {
+                self.volumeController.volumeUp()
+            }
+            return nil  // Block system volume
+
+        case NX_KEYTYPE_SOUND_DOWN:
+            DispatchQueue.main.async {
+                self.volumeController.volumeDown()
+            }
+            return nil  // Block system volume
+
+        case NX_KEYTYPE_MUTE:
+            DispatchQueue.main.async {
+                self.volumeController.toggleMute()
+            }
+            return nil  // Block system mute
+
         default:
-            break
+            return Unmanaged.passRetained(event)
         }
-
-        // Update icon on mute change
-        updateStatusIcon(connected: volumeController.isConnected, muted: volumeController.playbackMuted)
     }
 }
