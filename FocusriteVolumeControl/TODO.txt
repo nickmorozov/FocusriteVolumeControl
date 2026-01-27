@@ -1,0 +1,9 @@
+we have about menu, now add preferences (shows a window) - preferences should be also available via a cog icon on the popup, in the top right corner. the popup shoould only show the volume slider (no up/down buttons), mute (to the right of the slider) and speed. keep minimized in preferences window. direct monitor should be part of the "connected status" - app won't work without it enabled so we don't providfe an option to toggle it. so lets add an option "keep direct monitor on" and make sure it's on on every action, same as minimized.
+currently app says f13/14/15 are used as shortcuts but it's volume control and mute, right?
+add an option to choose which approach to use - FC server or FC app via applescript (first option will noot work for now)
+option to allow gain (0db to 6db). there should be a tick on the slider for 0. and unless the option is enabled you shouoldn't be able to go above the tick either with mouuse of shortcut.
+add button to restart server/app manually
+by default system vol+-/mute should be used with options to override and reset - preferences: input to set the custom shortcut with a button to reset to the right of input. available shortcuts are: volume up, volume down, mute, direct control (unset by default).
+option to start on sys startup
+option to restart server automatically if connection is lost
+shortcuts to switch presets and change inputs volume, with e.g., shift or control + volume

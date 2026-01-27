@@ -82,6 +82,25 @@ struct HeaderView: View {
 struct VolumeControlView: View {
     @ObservedObject var volumeController: VolumeController
 
+    // Local state for smooth slider dragging
+    @State private var isDragging = false
+    @State private var dragValue: Double = 0
+    @State private var pendingValue: Double? = nil  // Value waiting for backend confirmation
+
+    /// The value to display - uses pending value until backend catches up
+    private var displayValue: Double {
+        if isDragging {
+            return dragValue
+        } else if let pending = pendingValue {
+            // Show pending until backend confirms (within 1 dB tolerance)
+            if abs(volumeController.playbackVolume - pending) < 1.5 {
+                return volumeController.playbackVolume
+            }
+            return pending
+        }
+        return volumeController.playbackVolume
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             // Playback volume slider (dB scale, integer values)
@@ -95,13 +114,31 @@ struct VolumeControlView: View {
 
                 Slider(
                     value: Binding(
-                        get: { volumeController.playbackVolume },
-                        set: { volumeController.setPlaybackVolume($0) }
+                        get: { displayValue },
+                        set: { dragValue = $0 }
                     ),
                     in: -127...0,
-                    step: 1.0
+                    step: 1.0,
+                    onEditingChanged: { editing in
+                        isDragging = editing
+                        if editing {
+                            // Start dragging - capture current value
+                            dragValue = volumeController.playbackVolume
+                            pendingValue = nil
+                        } else {
+                            // End dragging - commit final value
+                            pendingValue = dragValue
+                            volumeController.setPlaybackVolume(dragValue)
+                        }
+                    }
                 )
                 .disabled(volumeController.playbackMuted)
+                .onChange(of: volumeController.playbackVolume) { _, newValue in
+                    // Clear pending when backend confirms (within tolerance)
+                    if let pending = pendingValue, abs(newValue - pending) < 1.5 {
+                        pendingValue = nil
+                    }
+                }
 
                 Text(volumeString)
                     .font(.system(.body, design: .monospaced))
@@ -129,7 +166,7 @@ struct VolumeControlView: View {
         if volumeController.playbackMuted {
             return "MUTE"
         } else {
-            return String(format: "%.0f dB", volumeController.playbackVolume)
+            return String(format: "%.0f dB", displayValue)
         }
     }
 }
@@ -146,6 +183,10 @@ struct AdditionalControlsView: View {
                 get: { volumeController.directMonitorEnabled },
                 set: { _ in volumeController.toggleDirectMonitor() }
             ))
+
+            // Keep FC2 Minimized toggle
+            Toggle("Keep FC2 Minimized", isOn: $volumeController.keepFC2Minimized)
+                .help("Minimize Focusrite Control 2 on connect")
 
             // Speed picker
             HStack {

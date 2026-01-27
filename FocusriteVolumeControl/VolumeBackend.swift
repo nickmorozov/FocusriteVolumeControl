@@ -66,6 +66,11 @@ protocol VolumeBackend: AnyObject {
     // MARK: - Direct Monitor
 
     func setDirectMonitorEnabled(_ enabled: Bool) async -> VolumeResult
+
+    // MARK: - FC2 Window Control
+
+    /// Minimize FC2 window if not already minimized (never unminimizes)
+    func minimizeFC2IfNeeded() async
 }
 
 /// Errors that can occur during volume operations

@@ -176,4 +176,10 @@ class MockVolumeBackend: VolumeBackend {
         stateSubject.send(_state)
         return .success
     }
+
+    // MARK: - FC2 Window Control
+
+    func minimizeFC2IfNeeded() async {
+        calls.append(Call("minimizeFC2IfNeeded"))
+    }
 }

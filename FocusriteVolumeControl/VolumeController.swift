@@ -32,6 +32,7 @@ class VolumeController: ObservableObject {
     // MARK: - Configuration
 
     @Published var stepSize: Double = 5.0  // Percentage per step (Normal speed)
+    @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
     let minVolume: Double = -127.0  // FC2's actual minimum
     let maxVolume: Double = 0.0  // Unity gain, no boost allowed
 
@@ -90,6 +91,12 @@ class VolumeController: ObservableObject {
                 await MainActor.run {
                     self.statusMessage = msg
                     self.isConnected = false
+                }
+            } else {
+                // Minimize FC2 after successful connect if setting is enabled
+                let shouldMinimize = await MainActor.run { keepFC2Minimized }
+                if shouldMinimize {
+                    await backend.minimizeFC2IfNeeded()
                 }
             }
         }

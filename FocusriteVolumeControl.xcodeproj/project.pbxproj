@@ -21,9 +21,33 @@
 		01A89D652F280BA90084DBD8 /* FocusriteVolumeControlTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FocusriteVolumeControlTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		01A89DBA2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "FocusriteVolumeControl" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				TODO.txt,
+			);
+			target = 01A89D562F280BA90084DBD8 /* FocusriteVolumeControl */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		01A89DBB2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "Compile Sources" phase from "FocusriteVolumeControl" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 01A89D532F280BA90084DBD8 /* Sources */;
+			membershipExceptions = (
+				TODO.txt,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		01A89D592F280BA90084DBD8 /* FocusriteVolumeControl */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				01A89DBA2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "FocusriteVolumeControl" target */,
+				01A89DBB2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "Compile Sources" phase from "FocusriteVolumeControl" target */,
+			);
 			path = FocusriteVolumeControl;
 			sourceTree = "<group>";
 		};
