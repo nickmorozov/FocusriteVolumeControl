@@ -10,6 +10,23 @@ import Foundation
 import Combine
 import AppKit  // For NSSound
 
+/// Available backend types for volume control
+enum BackendType: String, CaseIterable, Identifiable {
+    case appleScript = "AppleScript"
+    case fcServer = "FC Server"
+
+    var id: String { rawValue }
+
+    var description: String {
+        switch self {
+        case .appleScript:
+            return "Controls via Focusrite Control 2 app"
+        case .fcServer:
+            return "Direct protocol (not yet implemented)"
+        }
+    }
+}
+
 /// Manages volume, mute, and direct monitor controls
 /// This is the Controller in our MVC architecture
 class VolumeController: ObservableObject {
@@ -37,6 +54,7 @@ class VolumeController: ObservableObject {
     @Published var playVolumeSound: Bool = true  // Play system sound on volume change for audio feedback
     @Published var ensureDirectMonitorOn: Bool = true  // Auto-enable Direct Monitor before volume changes
     @Published var allowGain: Bool = false  // Allow volume above 0dB (up to +6dB)
+    @Published var backendType: BackendType = .appleScript  // Which backend to use
     let minVolume: Double = -127.0  // FC2's actual minimum
 
     /// Maximum volume depends on allowGain setting
@@ -44,7 +62,7 @@ class VolumeController: ObservableObject {
 
     // MARK: - Private Properties
 
-    private let backend: VolumeBackend
+    private var backend: VolumeBackend
     private var cancellables = Set<AnyCancellable>()
 
     // Pre-mute volume for restore
@@ -52,14 +70,15 @@ class VolumeController: ObservableObject {
 
     // MARK: - Initialization
 
-    init(backend: VolumeBackend) {
+    init(backend: VolumeBackend, backendType: BackendType = .appleScript) {
         self.backend = backend
+        self.backendType = backendType
         setupBindings()
     }
 
     /// Convenience init with default AppleScript backend
     convenience init() {
-        self.init(backend: AppleScriptBackend())
+        self.init(backend: AppleScriptBackend(), backendType: .appleScript)
     }
 
     private func setupBindings() {
@@ -116,6 +135,39 @@ class VolumeController: ObservableObject {
         Task {
             _ = await backend.refresh()
         }
+    }
+
+    /// Restart the current backend connection
+    func restart() {
+        disconnect()
+        connect()
+    }
+
+    /// Switch to a different backend type
+    func switchBackend(to newType: BackendType) {
+        guard newType != backendType else { return }
+
+        // Disconnect current backend
+        disconnect()
+
+        // Clear existing bindings
+        cancellables.removeAll()
+
+        // Create new backend
+        switch newType {
+        case .appleScript:
+            backend = AppleScriptBackend()
+        case .fcServer:
+            backend = FCServerBackend()
+        }
+
+        backendType = newType
+
+        // Re-setup bindings for new backend
+        setupBindings()
+
+        // Connect with new backend
+        connect()
     }
 
     // MARK: - Playback Volume Control

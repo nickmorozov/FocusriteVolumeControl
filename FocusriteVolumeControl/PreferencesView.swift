@@ -75,12 +75,64 @@ struct PreferencesView: View {
 
                 Divider()
 
+                // Backend Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Backend")
+                        .font(.headline)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Backend picker
+                        HStack {
+                            Text("Control Method:")
+                            Picker("", selection: Binding(
+                                get: { volumeController.backendType },
+                                set: { volumeController.switchBackend(to: $0) }
+                            )) {
+                                ForEach(BackendType.allCases) { type in
+                                    Text(type.rawValue).tag(type)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 120)
+                        }
+
+                        Text(volumeController.backendType.description)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.leading, 20)
+
+                        // Restart button
+                        HStack {
+                            Button("Restart Connection") {
+                                volumeController.restart()
+                            }
+                            .buttonStyle(.bordered)
+
+                            if volumeController.isConnected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                Text("Connected")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                                Text("Not connected")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                Divider()
+
                 // Keyboard Shortcuts Section
                 ShortcutsSectionView(shortcutManager: shortcutManager)
             }
             .padding()
         }
-        .frame(width: 380, height: 470)
+        .frame(width: 380, height: 580)
     }
 }
 

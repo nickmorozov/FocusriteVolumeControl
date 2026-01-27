@@ -1,12 +1,5 @@
-[DONE] Preferences -> Keyboard Shortcuts section: by default system vol+-/mute are used with options to override and reset. Available shortcuts: volume up, volume down, mute, direct monitor.
-[DONE] option to start on sys startup (Launch at Login using SMAppService)
-[DONE] option to allow gain (0db to 6db). there should be a tick on the slider for 0. and unless the option is enabled you shouldn't be able to go above the tick either with moouse of shortcut.
-add an option to choose which approach to use - FC server or FC app via applescript (first option will noot work for now)
-add button to restart server/app manually (depending on what's chosen)
-
-=== Roadmap ===
 Focusrite Control Protocol/Server support
-    Option to restart server automatically if connection is lost
+    Restart server automatically and reconnect if connection is lost
 Shortcuts to switch presets and change inputs volume, with e.g., shift or control + volume
 
 === Known Issues ===
