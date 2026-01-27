@@ -5,10 +5,8 @@
 //  Menu bar app delegate - intercepts system volume keys for Focusrite control
 //
 //  TODO:
-//  1. add button to restart server
-//  2. add menu with about and preferences
-//  3. option to start on sys startup
-//  4. option to restart server automatically if connection is lost
+//  1. option to start on sys startup
+//  2. option to restart server automatically if connection is lost
 
 import Cocoa
 import SwiftUI
@@ -28,6 +26,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
+    private var statusMenu: NSMenu!
 
     // Volume controller with AppleScript backend
     var volumeController: VolumeController!
@@ -46,6 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Set up menu bar
         setupMenuBar()
+        setupStatusMenu()
 
         // Set up media key interception (blocks system volume)
         setupMediaKeyTap()
@@ -75,8 +75,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "speaker.wave.2", accessibilityDescription: "Volume")
-            button.action = #selector(togglePopover)
             button.target = self
+            button.action = #selector(statusBarButtonClicked(_:))
+            // Enable right-click
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
         // Create popover
@@ -90,6 +92,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentViewController = NSHostingController(rootView: contentView)
     }
 
+    private func setupStatusMenu() {
+        statusMenu = NSMenu()
+
+        // About
+        let aboutItem = NSMenuItem(title: "About Focusrite Volume Control", action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        statusMenu.addItem(aboutItem)
+
+        statusMenu.addItem(NSMenuItem.separator())
+
+        // Reconnect
+        let reconnectItem = NSMenuItem(title: "Reconnect to FC2", action: #selector(reconnect), keyEquivalent: "r")
+        reconnectItem.target = self
+        statusMenu.addItem(reconnectItem)
+
+        statusMenu.addItem(NSMenuItem.separator())
+
+        // Quit
+        let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
+        quitItem.target = self
+        statusMenu.addItem(quitItem)
+    }
+
+    @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
+        guard let event = NSApp.currentEvent else { return }
+
+        if event.type == .rightMouseUp {
+            // Right-click: show menu
+            popover.performClose(nil)
+            statusItem.menu = statusMenu
+            statusItem.button?.performClick(nil)
+            statusItem.menu = nil  // Clear so left-click works next time
+        } else {
+            // Left-click: toggle popover
+            togglePopover()
+        }
+    }
+
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
 
@@ -99,6 +139,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
+    }
+
+    // MARK: - Menu Actions
+
+    @objc private func showAbout() {
+        let alert = NSAlert()
+        alert.messageText = "Focusrite Volume Control"
+        alert.informativeText = "Control your Focusrite Scarlett Solo volume with system media keys.\n\nVersion 1.0\n\n© 2026"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
+
+    @objc private func reconnect() {
+        volumeController.disconnect()
+        volumeController.connect()
+    }
+
+    @objc private func quitApp() {
+        NSApplication.shared.terminate(nil)
     }
 
     private func updateStatusIcon(connected: Bool, muted: Bool) {
@@ -198,25 +258,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return nil  // Suppress key up too
         }
 
-        // Handle volume keys - return nil to block system handling
+        // Handle volume keys - pass through to system for HUD, also control Focusrite
         switch keyCode {
         case NX_KEYTYPE_SOUND_UP:
             DispatchQueue.main.async {
                 self.volumeController.volumeUp()
             }
-            return nil  // Block system volume
+            return Unmanaged.passRetained(event)  // Let system show HUD
 
         case NX_KEYTYPE_SOUND_DOWN:
             DispatchQueue.main.async {
                 self.volumeController.volumeDown()
             }
-            return nil  // Block system volume
+            return Unmanaged.passRetained(event)  // Let system show HUD
 
         case NX_KEYTYPE_MUTE:
             DispatchQueue.main.async {
                 self.volumeController.toggleMute()
             }
-            return nil  // Block system mute
+            return Unmanaged.passRetained(event)  // Let system show HUD
 
         default:
             return Unmanaged.passRetained(event)

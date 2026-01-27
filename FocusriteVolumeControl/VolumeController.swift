@@ -56,14 +56,12 @@ class VolumeController: ObservableObject {
     }
 
     private func setupBindings() {
-        // Observe backend state changes - use async to avoid view update conflicts
+        // Observe backend state changes
+        // Use RunLoop.main.next to ensure updates happen after current view cycle
         backend.statePublisher
-            .receive(on: DispatchQueue.main)
+            .debounce(for: .milliseconds(10), scheduler: RunLoop.main)
             .sink { [weak self] state in
-                // Dispatch async to break out of any view update cycle
-                DispatchQueue.main.async {
-                    self?.updateFromBackendState(state)
-                }
+                self?.updateFromBackendState(state)
             }
             .store(in: &cancellables)
     }
