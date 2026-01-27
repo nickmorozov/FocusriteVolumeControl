@@ -214,9 +214,9 @@ class AppleScriptBackend: VolumeBackend {
     // MARK: - FC2 Window Control
 
     /// Minimize FC2 window to Dock (if not already minimized)
-    /// Uses AXMinimized attribute for reliable detection
+    /// Uses AXMinimized attribute for both detection and minimization (no focus stealing)
     func minimizeFC2IfNeeded() async {
-        // Check AXMinimized attribute - most reliable way to detect minimized state
+        // Check and set AXMinimized attribute directly - avoids stealing focus from our popover
         let checkAndMinimizeScript = """
         tell application "System Events"
             tell process "\(fc2Process)"
@@ -227,17 +227,11 @@ class AppleScriptBackend: VolumeBackend {
                 if isMin then
                     return "already_minimized"
                 end if
+                -- Minimize by setting AXMinimized directly (doesn't steal focus)
+                set value of attribute "AXMinimized" of window 1 to true
+                return "minimized"
             end tell
         end tell
-        -- Window is not minimized, minimize it
-        tell application "\(fc2Process)"
-            activate
-        end tell
-        delay 0.1
-        tell application "System Events"
-            keystroke "m" using command down
-        end tell
-        return "minimized"
         """
 
         do {

@@ -27,6 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var statusMenu: NSMenu!
+    private var preferencesWindow: NSWindow?
 
     // Volume controller with AppleScript backend
     var volumeController: VolumeController!
@@ -83,12 +84,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Create popover
         popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 250)
+        popover.contentSize = NSSize(width: 300, height: 180)
         popover.behavior = .transient
         popover.animates = true
 
-        // Set content view
-        let contentView = PopoverView(volumeController: volumeController)
+        // Set content view with preferences callback
+        let contentView = PopoverView(volumeController: volumeController) { [weak self] in
+            self?.showPreferences()
+        }
         popover.contentViewController = NSHostingController(rootView: contentView)
     }
 
@@ -99,6 +102,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let aboutItem = NSMenuItem(title: "About Focusrite Volume Control", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         statusMenu.addItem(aboutItem)
+
+        // Preferences
+        let prefsItem = NSMenuItem(title: "Preferences...", action: #selector(showPreferencesMenuItem), keyEquivalent: ",")
+        prefsItem.target = self
+        statusMenu.addItem(prefsItem)
 
         statusMenu.addItem(NSMenuItem.separator())
 
@@ -137,7 +145,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         } else {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
+            // Make window key but clear focus so no button has focus ring
+            if let window = popover.contentViewController?.view.window {
+                window.makeKey()
+                window.makeFirstResponder(nil)
+            }
         }
     }
 
@@ -150,6 +162,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
         alert.runModal()
+    }
+
+    @objc private func showPreferencesMenuItem() {
+        showPreferences()
+    }
+
+    func showPreferences() {
+        // Close popover if open
+        popover.performClose(nil)
+
+        // If window already exists, just bring it to front
+        if let window = preferencesWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        // Create preferences window
+        let prefsView = PreferencesView(volumeController: volumeController)
+        let hostingController = NSHostingController(rootView: prefsView)
+
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Preferences"
+        window.styleMask = [.titled, .closable]
+        window.setContentSize(NSSize(width: 320, height: 220))
+        window.center()
+        window.isReleasedWhenClosed = false
+
+        preferencesWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func reconnect() {

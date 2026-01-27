@@ -32,9 +32,10 @@ class VolumeController: ObservableObject {
 
     // MARK: - Configuration
 
-    @Published var stepSize: Double = 5.0  // Percentage per step (Normal speed)
+    @Published var stepSize: Double = 5.0  // dB per step (1-10 range)
     @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
     @Published var playVolumeSound: Bool = true  // Play system sound on volume change for audio feedback
+    @Published var ensureDirectMonitorOn: Bool = true  // Auto-enable Direct Monitor before volume changes
     let minVolume: Double = -127.0  // FC2's actual minimum
     let maxVolume: Double = 0.0  // Unity gain, no boost allowed
 
@@ -123,6 +124,9 @@ class VolumeController: ObservableObject {
         // Dispatch async to avoid SwiftUI view update conflicts
         DispatchQueue.main.async {
             Task {
+                // Ensure Direct Monitor is on before changing volume (required for app to work)
+                await self.ensureDirectMonitorIfNeeded()
+
                 let result = await self.backend.setPlaybackVolume(clamped)
                 if case .error(let msg) = result {
                     print("Failed to set playback volume: \(msg)")
@@ -139,6 +143,16 @@ class VolumeController: ObservableObject {
         let shouldMinimize = await MainActor.run { keepFC2Minimized }
         if shouldMinimize {
             await backend.minimizeFC2IfNeeded()
+        }
+    }
+
+    /// Ensure Direct Monitor is enabled if the setting is on
+    /// The app requires Direct Monitor to be enabled for volume control to work
+    private func ensureDirectMonitorIfNeeded() async {
+        let shouldEnsure = await MainActor.run { ensureDirectMonitorOn }
+        let isEnabled = await MainActor.run { directMonitorEnabled }
+        if shouldEnsure && !isEnabled {
+            _ = await backend.setDirectMonitorEnabled(true)
         }
     }
 

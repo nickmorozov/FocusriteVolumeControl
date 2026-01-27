@@ -2,18 +2,19 @@
 //  PopoverView.swift
 //  FocusriteVolumeControl
 //
-//  Menu bar popover UI
+//  Menu bar popover UI - minimal volume-focused design
 //
 
 import SwiftUI
 
 struct PopoverView: View {
     @ObservedObject var volumeController: VolumeController
+    var onOpenPreferences: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
             // Header with connection status
-            HeaderView(volumeController: volumeController)
+            HeaderView(volumeController: volumeController, onOpenPreferences: onOpenPreferences)
 
             Divider()
 
@@ -21,10 +22,8 @@ struct PopoverView: View {
                 // Volume controls
                 VolumeControlView(volumeController: volumeController)
 
-                Divider()
-
-                // Additional controls
-                AdditionalControlsView(volumeController: volumeController)
+                // Increment slider
+                IncrementSliderView(volumeController: volumeController)
             } else {
                 // Not connected
                 NotConnectedView(volumeController: volumeController)
@@ -36,7 +35,7 @@ struct PopoverView: View {
             FooterView()
         }
         .padding()
-        .frame(width: 280)
+        .frame(width: 300)
     }
 }
 
@@ -44,6 +43,7 @@ struct PopoverView: View {
 
 struct HeaderView: View {
     @ObservedObject var volumeController: VolumeController
+    var onOpenPreferences: () -> Void
 
     var body: some View {
         HStack {
@@ -69,6 +69,13 @@ struct HeaderView: View {
             }
             .buttonStyle(.plain)
             .help("Refresh")
+
+            // Preferences button (cog icon)
+            Button(action: onOpenPreferences) {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.plain)
+            .help("Preferences")
         }
     }
 
@@ -102,63 +109,70 @@ struct VolumeControlView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Playback volume slider (dB scale, integer values)
-            HStack {
-                Button(action: { volumeController.toggleMute() }) {
-                    Image(systemName: volumeController.playbackMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                        .foregroundColor(volumeController.playbackMuted ? .red : .primary)
+        // Single row: [Mute] [Vol-] ---slider--- [Vol+]  -20 dB
+        HStack(spacing: 8) {
+            // Mute button - ZStack keeps both icons in layout to prevent shift
+            Button(action: { volumeController.toggleMute() }) {
+                ZStack {
+                    Image(systemName: "speaker.slash")
+                        .opacity(volumeController.playbackMuted ? 0 : 1)
+                    Image(systemName: "speaker.slash.fill")
+                        .opacity(volumeController.playbackMuted ? 1 : 0)
                 }
-                .buttonStyle(.plain)
-                .help(volumeController.playbackMuted ? "Unmute" : "Mute")
+                .foregroundColor(volumeController.playbackMuted ? .red : .primary)
+            }
+            .buttonStyle(.plain)
+            .help(volumeController.playbackMuted ? "Unmute" : "Mute")
 
-                Slider(
-                    value: Binding(
-                        get: { displayValue },
-                        set: { dragValue = $0 }
-                    ),
-                    in: -127...0,
-                    step: 1.0,
-                    onEditingChanged: { editing in
-                        isDragging = editing
-                        if editing {
-                            // Start dragging - capture current value
-                            dragValue = volumeController.playbackVolume
-                            pendingValue = nil
-                        } else {
-                            // End dragging - commit final value
-                            pendingValue = dragValue
-                            volumeController.setPlaybackVolume(dragValue)
-                        }
-                    }
-                )
-                .disabled(volumeController.playbackMuted)
-                .onChange(of: volumeController.playbackVolume) { _, newValue in
-                    // Clear pending when backend confirms (within tolerance)
-                    if let pending = pendingValue, abs(newValue - pending) < 1.5 {
+            // Volume down button
+            Button(action: { volumeController.volumeDown() }) {
+                Image(systemName: "speaker.wave.1")
+            }
+            .buttonStyle(.plain)
+            .help("Volume Down")
+            .disabled(volumeController.playbackMuted)
+
+            // Volume slider
+            Slider(
+                value: Binding(
+                    get: { displayValue },
+                    set: { dragValue = $0 }
+                ),
+                in: -127...0,
+                step: 1.0,
+                onEditingChanged: { editing in
+                    isDragging = editing
+                    if editing {
+                        // Start dragging - capture current value
+                        dragValue = volumeController.playbackVolume
                         pendingValue = nil
+                    } else {
+                        // End dragging - commit final value
+                        pendingValue = dragValue
+                        volumeController.setPlaybackVolume(dragValue)
                     }
                 }
-
-                Text(volumeString)
-                    .font(.system(.body, design: .monospaced))
-                    .frame(width: 55, alignment: .trailing)
+            )
+            .disabled(volumeController.playbackMuted)
+            .onChange(of: volumeController.playbackVolume) { _, newValue in
+                // Clear pending when backend confirms (within tolerance)
+                if let pending = pendingValue, abs(newValue - pending) < 1.5 {
+                    pendingValue = nil
+                }
             }
 
-            // Volume buttons
-            HStack(spacing: 20) {
-                Button(action: { volumeController.volumeDown() }) {
-                    Label("Volume Down", systemImage: "minus.circle")
-                }
-                .buttonStyle(.bordered)
-                .keyboardShortcut(.downArrow, modifiers: [])
-
-                Button(action: { volumeController.volumeUp() }) {
-                    Label("Volume Up", systemImage: "plus.circle")
-                }
-                .buttonStyle(.bordered)
-                .keyboardShortcut(.upArrow, modifiers: [])
+            // Volume up button
+            Button(action: { volumeController.volumeUp() }) {
+                Image(systemName: "speaker.wave.3")
             }
+            .buttonStyle(.plain)
+            .help("Volume Up")
+            .disabled(volumeController.playbackMuted)
+
+            // Volume display
+            Text(volumeString)
+                .font(.system(.body, design: .monospaced))
+                .frame(width: 55, alignment: .trailing)
         }
     }
 
@@ -171,50 +185,26 @@ struct VolumeControlView: View {
     }
 }
 
-// MARK: - Additional Controls View
+// MARK: - Increment Slider View
 
-struct AdditionalControlsView: View {
+struct IncrementSliderView: View {
     @ObservedObject var volumeController: VolumeController
 
     var body: some View {
-        VStack(spacing: 8) {
-            // Direct Monitor toggle
-            Toggle("Direct Monitor", isOn: Binding(
-                get: { volumeController.directMonitorEnabled },
-                set: { _ in volumeController.toggleDirectMonitor() }
-            ))
+        HStack {
+            Text("Increment:")
+                .font(.caption)
+                .foregroundColor(.secondary)
 
-            // Keep FC2 Minimized toggle
-            Toggle("Keep FC2 Minimized", isOn: $volumeController.keepFC2Minimized)
-                .help("Minimize Focusrite Control 2 on connect")
+            Slider(
+                value: $volumeController.stepSize,
+                in: 1...10,
+                step: 1
+            )
 
-            // Volume sound feedback toggle
-            Toggle("Play Volume Sound", isOn: $volumeController.playVolumeSound)
-                .help("Play system sound on volume change")
-
-            // Speed picker
-            HStack {
-                Text("Speed:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Picker("", selection: Binding(
-                    get: { volumeController.stepSize },
-                    set: { newValue in
-                        DispatchQueue.main.async {
-                            volumeController.stepSize = newValue
-                        }
-                    }
-                )) {
-                    Text("Slow").tag(3.0)
-                    Text("Normal").tag(5.0)
-                    Text("Fast").tag(8.0)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 150)
-
-                Spacer()
-            }
+            Text("\(Int(volumeController.stepSize))")
+                .font(.system(.body, design: .monospaced))
+                .frame(width: 20, alignment: .trailing)
         }
     }
 }
@@ -275,5 +265,5 @@ struct FooterView: View {
 // MARK: - Preview
 
 #Preview {
-    PopoverView(volumeController: VolumeController())
+    PopoverView(volumeController: VolumeController(), onOpenPreferences: {})
 }
