@@ -240,13 +240,15 @@ struct NotConnectedView: View {
 // MARK: - Footer View
 
 struct FooterView: View {
+    @ObservedObject private var shortcutManager = ShortcutManager.shared
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Shortcuts")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                Text("F13/F14: Vol  F15: Mute")
+                Text(shortcutsDescription)
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
@@ -259,6 +261,19 @@ struct FooterView: View {
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
         }
+    }
+
+    private var shortcutsDescription: String {
+        let volUp = shortcutManager.displayString(for: .volumeUp)
+        let volDown = shortcutManager.displayString(for: .volumeDown)
+        let mute = shortcutManager.displayString(for: .mute)
+
+        // Simplify display for default media keys
+        if volUp == "Volume Up Key" && volDown == "Volume Down Key" && mute == "Mute Key" {
+            return "System Volume Keys"
+        }
+
+        return "Volume: \(volDown)/\(volUp)  Mute: \(mute)"
     }
 }
 

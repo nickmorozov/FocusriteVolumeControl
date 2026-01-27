@@ -1,9 +1,12 @@
-Preferences -> Keyboard Shortcuts section: currently app says f13/14/15 are used as shortcuts but it's system volume control and mute, right? by default system vol+-/mute should be used with options to override and reset - preferences: input to set the custom shortcut with a button to reset to the right of input. available shortcuts are: volume up, volume down, mute, direct control (unset by default).
+[DONE] Preferences -> Keyboard Shortcuts section: by default system vol+-/mute are used with options to override and reset. Available shortcuts: volume up, volume down, mute, direct monitor.
 add an option to choose which approach to use - FC server or FC app via applescript (first option will noot work for now)
 add button to restart server/app manually (depending on what's chosen)
 option to start on sys startup
-option to restart server automatically if connection is lost
-shortcuts to switch presets and change inputs volume, with e.g., shift or control + volume
+
+=== Roadmap ===
+Focusrite Control Protocol/Server support
+    Option to restart server automatically if connection is lost
+Shortcuts to switch presets and change inputs volume, with e.g., shift or control + volume
 
 === Known Issues ===
 - Mute button causes popover to shift a few pixels when menu bar is set to "Always Hidden". This appears to be a macOS/SwiftUI interaction issue with auto-hiding menu bars and popover repositioning.

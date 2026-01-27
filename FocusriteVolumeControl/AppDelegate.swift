@@ -38,6 +38,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
+    // Custom hotkey manager for non-media-key shortcuts
+    private var hotkeyManager: HotkeyManager!
+
     // MARK: - App Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -50,6 +53,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Set up media key interception (blocks system volume)
         setupMediaKeyTap()
+
+        // Set up custom hotkey manager for non-media-key shortcuts
+        setupHotkeyManager()
 
         // Connect to FC2 via AppleScript
         volumeController.connect()
@@ -67,6 +73,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         volumeController.disconnect()
         removeMediaKeyTap()
+        hotkeyManager?.stop()
+    }
+
+    private func setupHotkeyManager() {
+        hotkeyManager = HotkeyManager()
+        hotkeyManager.onVolumeUp = { [weak self] in
+            self?.volumeController.volumeUp()
+        }
+        hotkeyManager.onVolumeDown = { [weak self] in
+            self?.volumeController.volumeDown()
+        }
+        hotkeyManager.onMute = { [weak self] in
+            self?.volumeController.toggleMute()
+        }
+        hotkeyManager.onDirectMonitor = { [weak self] in
+            self?.volumeController.toggleDirectMonitor()
+        }
+        hotkeyManager.start()
     }
 
     // MARK: - Menu Bar Setup
@@ -186,7 +210,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Preferences"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 320, height: 220))
+        window.setContentSize(NSSize(width: 380, height: 420))
         window.center()
         window.isReleasedWhenClosed = false
 
