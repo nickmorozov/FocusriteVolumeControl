@@ -68,6 +68,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.updateStatusIcon(connected: isConnected, muted: isMuted)
             }
             .store(in: &cancellables)
+
+        // Show floating HUD on volume/mute changes (suppress when popover is open)
+        volumeController.$playbackVolume
+            .combineLatest(volumeController.$playbackMuted, volumeController.$allowGain)
+            .dropFirst()  // Skip initial state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] volume, isMuted, allowGain in
+                guard let self, !self.popover.isShown else { return }
+                VolumeHUDPanel.shared.show(volume: volume, isMuted: isMuted, allowGain: allowGain)
+            }
+            .store(in: &cancellables)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -343,25 +354,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return nil  // Suppress key up too
         }
 
-        // Handle volume keys - pass through to system for HUD, also control Focusrite
+        // Handle volume keys - block system HUD, show custom Focusrite HUD instead
         switch keyCode {
         case NX_KEYTYPE_SOUND_UP:
             DispatchQueue.main.async {
                 self.volumeController.volumeUp()
             }
-            return Unmanaged.passRetained(event)  // Let system show HUD
+            return nil  // Block system volume change and HUD
 
         case NX_KEYTYPE_SOUND_DOWN:
             DispatchQueue.main.async {
                 self.volumeController.volumeDown()
             }
-            return Unmanaged.passRetained(event)  // Let system show HUD
+            return nil  // Block system volume change and HUD
 
         case NX_KEYTYPE_MUTE:
             DispatchQueue.main.async {
                 self.volumeController.toggleMute()
             }
-            return Unmanaged.passRetained(event)  // Let system show HUD
+            return nil  // Block system volume change and HUD
 
         default:
             return Unmanaged.passRetained(event)
