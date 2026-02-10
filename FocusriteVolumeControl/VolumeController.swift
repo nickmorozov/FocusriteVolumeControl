@@ -51,7 +51,7 @@ class VolumeController: ObservableObject {
 
     @Published var stepSize: Double = 5.0  // dB per step (1-10 range)
     @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
-    @Published var playVolumeSound: Bool = true  // Play system sound on volume change for audio feedback
+    @Published var playVolumeSound: Bool = false  // Play system sound on volume change (HUD provides visual feedback)
     @Published var ensureDirectMonitorOn: Bool = true  // Auto-enable Direct Monitor before volume changes
     @Published var allowGain: Bool = false  // Allow volume above 0dB (up to +6dB)
     @Published var backendType: BackendType = .appleScript  // Which backend to use
@@ -67,6 +67,10 @@ class VolumeController: ObservableObject {
 
     // Pre-mute volume for restore
     private var preMuteVolume: Double = -20.0
+
+    // Tracks the most recent pending volume to prevent stale backend responses
+    // from overwriting optimistic updates during rapid key presses
+    private var pendingVolume: Double?
 
     // MARK: - Initialization
 
@@ -93,11 +97,12 @@ class VolumeController: ObservableObject {
     }
 
     private func updateFromBackendState(_ state: VolumeState) {
-        // Only update if values actually changed to minimize view updates
-        if playbackVolume != state.playbackVolume { playbackVolume = state.playbackVolume }
-        // Derive muted state from volume level (volume-based mute)
-        let isMuted = state.playbackVolume <= minVolume
-        if playbackMuted != isMuted { playbackMuted = isMuted }
+        // Don't overwrite optimistic volume while rapid changes are pending
+        if pendingVolume == nil {
+            if playbackVolume != state.playbackVolume { playbackVolume = state.playbackVolume }
+            let isMuted = state.playbackVolume <= minVolume
+            if playbackMuted != isMuted { playbackMuted = isMuted }
+        }
         if input1Volume != state.input1Volume { input1Volume = state.input1Volume }
         if input1Muted != state.input1Muted { input1Muted = state.input1Muted }
         if input2Volume != state.input2Volume { input2Volume = state.input2Volume }
@@ -176,10 +181,14 @@ class VolumeController: ObservableObject {
         // FC2 only accepts integer dB values - round to nearest int
         let rounded = round(newVolume)
         let clamped = max(minVolume, min(maxVolume, rounded))
-        // Dispatch async to avoid SwiftUI view update conflicts
+
+        // Optimistic update so rapid key presses accumulate correctly
+        playbackVolume = clamped
+        playbackMuted = clamped <= minVolume
+        pendingVolume = clamped
+
         DispatchQueue.main.async {
             Task {
-                // Ensure Direct Monitor is on before changing volume (required for app to work)
                 await self.ensureDirectMonitorIfNeeded()
 
                 let result = await self.backend.setPlaybackVolume(clamped)
@@ -189,6 +198,13 @@ class VolumeController: ObservableObject {
                     await MainActor.run { self.playVolumeFeedback() }
                 }
                 await self.minimizeFC2IfNeeded()
+
+                // Clear pending if this was the most recent request
+                await MainActor.run {
+                    if self.pendingVolume == clamped {
+                        self.pendingVolume = nil
+                    }
+                }
             }
         }
     }

@@ -69,14 +69,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
-        // Show floating HUD on volume/mute changes (suppress when popover is open)
+        // Keep HUD values in sync with backend (updates content but doesn't show the HUD)
         volumeController.$playbackVolume
             .combineLatest(volumeController.$playbackMuted, volumeController.$allowGain)
-            .dropFirst()  // Skip initial state
+            .dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] volume, isMuted, allowGain in
-                guard let self, !self.popover.isShown else { return }
-                VolumeHUDPanel.shared.show(volume: volume, isMuted: isMuted, allowGain: allowGain)
+            .sink { volume, isMuted, allowGain in
+                VolumeHUDPanel.shared.update(volume: volume, isMuted: isMuted, allowGain: allowGain)
             }
             .store(in: &cancellables)
     }
@@ -87,16 +86,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager?.stop()
     }
 
+    /// Show the floating HUD with current volume state
+    private func showHUD() {
+        let vc = volumeController!
+        VolumeHUDPanel.shared.show(volume: vc.playbackVolume, isMuted: vc.playbackMuted, allowGain: vc.allowGain)
+    }
+
     private func setupHotkeyManager() {
         hotkeyManager = HotkeyManager()
         hotkeyManager.onVolumeUp = { [weak self] in
             self?.volumeController.volumeUp()
+            self?.showHUD()
         }
         hotkeyManager.onVolumeDown = { [weak self] in
             self?.volumeController.volumeDown()
+            self?.showHUD()
         }
         hotkeyManager.onMute = { [weak self] in
             self?.volumeController.toggleMute()
+            self?.showHUD()
         }
         hotkeyManager.onDirectMonitor = { [weak self] in
             self?.volumeController.toggleDirectMonitor()
@@ -359,18 +367,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case NX_KEYTYPE_SOUND_UP:
             DispatchQueue.main.async {
                 self.volumeController.volumeUp()
+                self.showHUD()
             }
             return nil  // Block system volume change and HUD
 
         case NX_KEYTYPE_SOUND_DOWN:
             DispatchQueue.main.async {
                 self.volumeController.volumeDown()
+                self.showHUD()
             }
             return nil  // Block system volume change and HUD
 
         case NX_KEYTYPE_MUTE:
             DispatchQueue.main.async {
                 self.volumeController.toggleMute()
+                self.showHUD()
             }
             return nil  // Block system volume change and HUD
 

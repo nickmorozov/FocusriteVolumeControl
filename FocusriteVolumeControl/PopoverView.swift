@@ -220,7 +220,7 @@ struct IncrementSliderView: View {
 
             Slider(
                 value: $volumeController.stepSize,
-                in: 1...10,
+                in: 1...20,
                 step: 1
             )
 
