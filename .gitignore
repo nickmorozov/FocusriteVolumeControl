@@ -63,3 +63,10 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 /FocusriteVolumeControl.iml
+
+# Build artifacts
+build/
+*.profraw
+
+# Claude Code local settings
+.claude/settings.local.json

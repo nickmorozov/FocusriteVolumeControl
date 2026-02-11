@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-dmg:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Release
+        run: |
+          xcodebuild -scheme FocusriteVolumeControl -configuration Release build
+
+      - name: Package DMG
+        run: |
+          BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/FocusriteVolumeControl-* \
+            -path "*/Build/Products/Release/FocusriteVolumeControl.app" -maxdepth 5 | head -1)
+          mkdir -p build/dmg
+          cp -R "$BUILT_APP" build/dmg/
+          ln -s /Applications build/dmg/Applications
+          hdiutil create \
+            -volname "FocusriteVolumeControl" \
+            -srcfolder build/dmg \
+            -ov -format UDZO \
+            build/FocusriteVolumeControl.dmg
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/FocusriteVolumeControl.dmg
+          generate_release_notes: true

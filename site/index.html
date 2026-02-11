@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focusrite Volume Control — Control your Focusrite with keyboard shortcuts</title>
+    <meta name="description" content="A macOS menu bar app that lets you control your Focusrite Scarlett Solo volume with your keyboard's media keys and custom shortcuts.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <span class="hero-icon" aria-hidden="true">🎛️</span>
+        <h1>Focusrite Volume Control</h1>
+        <p class="tagline">Control your Focusrite Scarlett Solo volume with your Mac's media keys and custom shortcuts.</p>
+
+        <div class="hero-buttons">
+            <a href="https://github.com/nickmorozov/FocusriteVolumeControl/releases/latest" class="btn btn-primary">
+                ⬇ Download DMG
+            </a>
+            <a href="https://github.com/nickmorozov/FocusriteVolumeControl" class="btn btn-secondary">
+                View on GitHub
+            </a>
+        </div>
+
+        <div class="screenshot-wrapper">
+            <div class="screenshot-placeholder">
+                📸 Screenshot placeholder — replace with app screenshot
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <div class="container">
+        <h2>Features</h2>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="icon" aria-hidden="true">🎹</span>
+                <h3>Media Key Interception</h3>
+                <p>Your Mac's volume up, volume down, and mute keys directly control your Focusrite instead of the built-in speakers.</p>
+            </div>
+
+            <div class="feature-card">
+                <span class="icon" aria-hidden="true">📊</span>
+                <h3>Custom Volume HUD</h3>
+                <p>A sleek floating HUD replaces the macOS volume popup, showing your Focusrite's actual dB level with an overgain indicator.</p>
+            </div>
+
+            <div class="feature-card">
+                <span class="icon" aria-hidden="true">🎚️</span>
+                <h3>Perceptual Volume Curve</h3>
+                <p>50% slider position equals -16 dB — matching how your ears actually perceive loudness changes for natural-feeling control.</p>
+            </div>
+
+            <div class="feature-card">
+                <span class="icon" aria-hidden="true">⌨️</span>
+                <h3>Custom Hotkeys</h3>
+                <p>Assign any keyboard shortcut to volume up, volume down, mute, and direct monitor toggle.</p>
+            </div>
+
+            <div class="feature-card">
+                <span class="icon" aria-hidden="true">🔇</span>
+                <h3>Mute &amp; Direct Monitor</h3>
+                <p>Instant mute toggle and direct monitor control without opening Focusrite Control 2.</p>
+            </div>
+
+            <div class="feature-card">
+                <span class="icon" aria-hidden="true">📍</span>
+                <h3>Menu Bar App</h3>
+                <p>Lives in your menu bar. Left-click for quick controls, right-click for preferences and options.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Download -->
+<section class="download" id="download">
+    <div class="container">
+        <h2>Download</h2>
+        <p class="subtitle">Free and open source. Requires macOS and Focusrite Control 2.</p>
+
+        <a href="https://github.com/nickmorozov/FocusriteVolumeControl/releases/latest" class="btn btn-primary">
+            ⬇ Download Latest Release
+        </a>
+
+        <p class="download-note">
+            Distributed as a DMG outside the App Store.<br>
+            The app requires Accessibility and Automation permissions — a setup wizard will guide you on first launch.
+        </p>
+    </div>
+</section>
+
+<!-- Setup -->
+<section class="setup">
+    <div class="container">
+        <h2>Setup</h2>
+
+        <div class="setup-steps">
+            <div class="setup-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Install Focusrite Control 2</h3>
+                    <p>Download and install <a href="https://focusrite.com/downloads">Focusrite Control 2</a> if you haven't already. This app drives FC2 to control your volume.</p>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Download &amp; open the DMG</h3>
+                    <p>Drag <code>FocusriteVolumeControl.app</code> to your Applications folder.</p>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Grant Accessibility permission</h3>
+                    <p>The setup wizard will prompt you. This lets the app intercept your volume keys. Go to <strong>System Settings &rarr; Privacy &amp; Security &rarr; Accessibility</strong> and enable the app.</p>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Grant Automation permission</h3>
+                    <p>The app will ask to control System Events and Focusrite Control 2. Click <strong>Allow</strong> when prompted. This lets it read and set volume levels.</p>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Use your volume keys</h3>
+                    <p>That's it! Your Mac's volume keys now control your Focusrite. Customize shortcuts and preferences from the menu bar icon.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-links">
+            <a href="https://github.com/nickmorozov/FocusriteVolumeControl">GitHub</a>
+            <a href="https://github.com/nickmorozov/FocusriteVolumeControl/issues">Issues</a>
+            <a href="https://github.com/nickmorozov/FocusriteVolumeControl/releases">Releases</a>
+        </div>
+        <p>Focusrite Volume Control is open source software. Not affiliated with Focusrite plc.</p>
+    </div>
+</footer>
+
+</body>
+</html>
