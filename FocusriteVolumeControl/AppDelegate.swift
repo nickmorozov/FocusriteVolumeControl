@@ -28,6 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover!
     private var statusMenu: NSMenu!
     private var preferencesWindow: NSWindow?
+    private var onboardingWindow: NSWindow?
 
     // Volume controller with AppleScript backend
     var volumeController: VolumeController!
@@ -47,18 +48,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize volume controller with AppleScript backend
         volumeController = VolumeController()
 
-        // Set up menu bar
+        // Set up menu bar (always visible, even before permissions)
         setupMenuBar()
         setupStatusMenu()
-
-        // Set up media key interception (blocks system volume)
-        setupMediaKeyTap()
-
-        // Set up custom hotkey manager for non-media-key shortcuts
-        setupHotkeyManager()
-
-        // Connect to FC2 via AppleScript
-        volumeController.connect()
 
         // Observe connection state to update icon
         volumeController.$isConnected
@@ -78,6 +70,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 VolumeHUDPanel.shared.update(volume: volume, isMuted: isMuted, allowGain: allowGain)
             }
             .store(in: &cancellables)
+
+        // Gate media key tap + connection on permissions
+        showOnboardingIfNeeded()
+    }
+
+    // MARK: - Onboarding
+
+    private func showOnboardingIfNeeded() {
+        guard !areAllPermissionsGranted() else {
+            proceedAfterOnboarding()
+            return
+        }
+
+        let onboardingView = OnboardingView { [weak self] in
+            self?.onboardingWindow?.close()
+            self?.onboardingWindow = nil
+            self?.proceedAfterOnboarding()
+        }
+
+        let hostingController = NSHostingController(rootView: onboardingView)
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Setup"
+        window.styleMask = [.titled, .closable]
+        window.isReleasedWhenClosed = false
+        window.center()
+
+        onboardingWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func proceedAfterOnboarding() {
+        setupMediaKeyTap()
+        setupHotkeyManager()
+        volumeController.connect()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

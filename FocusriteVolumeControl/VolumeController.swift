@@ -49,7 +49,7 @@ class VolumeController: ObservableObject {
 
     // MARK: - Configuration
 
-    @Published var stepSize: Double = 5.0  // dB per step (1-10 range)
+    let stepSize: Double = 6.25  // Matches macOS system: 16 steps across full range (100/16)
     @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
     @Published var playVolumeSound: Bool = false  // Play system sound on volume change (HUD provides visual feedback)
     @Published var ensureDirectMonitorOn: Bool = true  // Auto-enable Direct Monitor before volume changes

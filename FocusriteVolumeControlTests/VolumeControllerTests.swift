@@ -435,45 +435,9 @@ final class VolumeControllerTests: XCTestCase {
 
     // MARK: - Step Size Tests
 
-    func testStepSize_DefaultIsNormal() {
-        XCTAssertEqual(controller.stepSize, 5.0)
-    }
-
-    func testStepSize_CanBeSetToSlow() {
-        controller.stepSize = 3.0
-        XCTAssertEqual(controller.stepSize, 3.0)
-    }
-
-    func testStepSize_CanBeSetToFast() {
-        controller.stepSize = 8.0
-        XCTAssertEqual(controller.stepSize, 8.0)
-    }
-
-    func testVolumeUp_UsesStepSize_Slow() async throws {
-        controller.stepSize = 3.0
-        mockBackend.setPlaybackVolumeState(-60.0)
-        try await waitForStateUpdate()
-
-        mockBackend.clearCalls()
-        controller.volumeUp()
-        try await waitForStateUpdate()
-
-        let volumeCalls = calls(named: "setPlaybackVolume")
-        XCTAssertFalse(volumeCalls.isEmpty)
-        // With 3% step, change should be smaller than with 8%
-    }
-
-    func testVolumeUp_UsesStepSize_Fast() async throws {
-        controller.stepSize = 8.0
-        mockBackend.setPlaybackVolumeState(-60.0)
-        try await waitForStateUpdate()
-
-        mockBackend.clearCalls()
-        controller.volumeUp()
-        try await waitForStateUpdate()
-
-        let volumeCalls = calls(named: "setPlaybackVolume")
-        XCTAssertFalse(volumeCalls.isEmpty)
+    func testStepSize_MatchesSystemIncrement() {
+        // macOS system volume uses 16 steps: 100/16 = 6.25
+        XCTAssertEqual(controller.stepSize, 6.25)
     }
 
     // MARK: - Input Channel Tests

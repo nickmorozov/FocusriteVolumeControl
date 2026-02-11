@@ -21,11 +21,6 @@ struct PopoverView: View {
             if volumeController.isConnected {
                 // Volume controls
                 VolumeControlView(volumeController: volumeController)
-
-                Divider()
-
-                // Increment slider
-                IncrementSliderView(volumeController: volumeController)
             } else {
                 // Not connected
                 NotConnectedView(volumeController: volumeController)
@@ -203,30 +198,6 @@ struct VolumeControlView: View {
             return String(format: "+%.0f dB", displayValue)
         } else {
             return String(format: "%.0f dB", displayValue)
-        }
-    }
-}
-
-// MARK: - Increment Slider View
-
-struct IncrementSliderView: View {
-    @ObservedObject var volumeController: VolumeController
-
-    var body: some View {
-        HStack {
-            Text("Increment:")
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            Slider(
-                value: $volumeController.stepSize,
-                in: 1...20,
-                step: 1
-            )
-
-            Text("\(Int(volumeController.stepSize))")
-                .font(.system(.body, design: .monospaced))
-                .frame(width: 20, alignment: .trailing)
         }
     }
 }

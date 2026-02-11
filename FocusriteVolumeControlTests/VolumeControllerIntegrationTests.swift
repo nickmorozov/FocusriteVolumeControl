@@ -163,33 +163,6 @@ final class VolumeControllerIntegrationTests: XCTestCase {
         XCTAssertEqual(controller.playbackVolume, -127.0)
     }
 
-    // MARK: - Speed Setting Integration
-
-    func testSpeedChange_AffectsVolumeSteps() async throws {
-        mockBackend.setPlaybackVolumeState(-60.0)
-        try await waitForStateUpdate()
-
-        // Slow speed
-        controller.stepSize = 3.0
-        let startVolume = controller.playbackVolume
-        controller.volumeUp()
-        try await waitForStateUpdate()
-        let slowStepChange = controller.playbackVolume - startVolume
-
-        // Reset
-        mockBackend.setPlaybackVolumeState(-60.0)
-        try await waitForStateUpdate()
-
-        // Fast speed
-        controller.stepSize = 8.0
-        controller.volumeUp()
-        try await waitForStateUpdate()
-        let fastStepChange = controller.playbackVolume - (-60.0)
-
-        // Fast step should be larger (or equal at boundaries)
-        XCTAssertGreaterThanOrEqual(fastStepChange, slowStepChange)
-    }
-
     // MARK: - Connection State Integration
 
     func testConnectionLifecycle() async throws {
