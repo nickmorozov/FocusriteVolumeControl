@@ -39,6 +39,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
+    // Monitors whether a Focusrite Scarlett is the default audio output
+    private var audioDeviceMonitor: AudioDeviceMonitor!
+    // Fast-access flag for the CGEventTap callback (updated via Combine subscription)
+    private var isFocusriteActive = false
+
     // Custom hotkey manager for non-media-key shortcuts
     private var hotkeyManager: HotkeyManager!
 
@@ -47,6 +52,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize volume controller with AppleScript backend
         volumeController = VolumeController()
+
+        // Monitor default audio output device for Focusrite detection
+        audioDeviceMonitor = AudioDeviceMonitor()
 
         // Set up menu bar (always visible, even before permissions)
         setupMenuBar()
@@ -68,6 +76,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .receive(on: DispatchQueue.main)
             .sink { volume, isMuted, allowGain in
                 VolumeHUDPanel.shared.update(volume: volume, isMuted: isMuted, allowGain: allowGain)
+            }
+            .store(in: &cancellables)
+
+        // Auto-connect/disconnect when the default output device changes
+        audioDeviceMonitor.$isFocusriteDefaultOutput
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isActive in
+                guard let self else { return }
+                self.isFocusriteActive = isActive
+                if isActive {
+                    print("🎧 Focusrite is default output — intercepting media keys")
+                    self.volumeController.connect()
+                } else {
+                    print("🔇 Focusrite is not default output — passing media keys through to system")
+                    self.volumeController.disconnect()
+                }
             }
             .store(in: &cancellables)
 
@@ -104,7 +129,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func proceedAfterOnboarding() {
         setupMediaKeyTap()
         setupHotkeyManager()
-        volumeController.connect()
+        // Connection is handled by the audioDeviceMonitor subscription —
+        // it auto-connects when a Focusrite device becomes the default output.
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -122,18 +148,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupHotkeyManager() {
         hotkeyManager = HotkeyManager()
         hotkeyManager.onVolumeUp = { [weak self] in
+            guard self?.isFocusriteActive == true else { return }
             self?.volumeController.volumeUp()
             self?.showHUD()
         }
         hotkeyManager.onVolumeDown = { [weak self] in
+            guard self?.isFocusriteActive == true else { return }
             self?.volumeController.volumeDown()
             self?.showHUD()
         }
         hotkeyManager.onMute = { [weak self] in
+            guard self?.isFocusriteActive == true else { return }
             self?.volumeController.toggleMute()
             self?.showHUD()
         }
         hotkeyManager.onDirectMonitor = { [weak self] in
+            guard self?.isFocusriteActive == true else { return }
             self?.volumeController.toggleDirectMonitor()
         }
         hotkeyManager.start()
@@ -297,8 +327,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func reconnect() {
+        audioDeviceMonitor.refresh()
         volumeController.disconnect()
-        volumeController.connect()
+        if isFocusriteActive {
+            volumeController.connect()
+        }
     }
 
     @objc private func quitApp() {
@@ -399,7 +432,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Only handle key down
         guard keyDown else {
-            return nil  // Suppress key up too
+            // If Focusrite is active, suppress key-up too; otherwise pass through
+            return isFocusriteActive ? nil : Unmanaged.passRetained(event)
+        }
+
+        // If Focusrite is not the default output, pass media keys through to the system
+        guard isFocusriteActive else {
+            return Unmanaged.passRetained(event)
         }
 
         // Handle volume keys - block system HUD, show custom Focusrite HUD instead
