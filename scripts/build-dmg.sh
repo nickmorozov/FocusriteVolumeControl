@@ -3,15 +3,13 @@
 # build-dmg.sh — Build a distributable DMG for Focusrite Volume Control
 #
 # Usage:
-#   bash scripts/build-dmg.sh
+#   bash scripts/build-dmg.sh          # uses project signing settings
+#   ADHOC=1 bash scripts/build-dmg.sh  # force ad-hoc signing (for CI)
 #
 # Optional environment variables for notarization:
 #   APPLE_ID       — Apple ID email for notarization
 #   TEAM_ID        — Developer Team ID
 #   APP_PASSWORD   — App-specific password for notarization
-#
-# Without a Developer ID certificate, the app will be built unsigned.
-# Users can add code signing later by setting CODE_SIGN_IDENTITY.
 #
 
 set -euo pipefail
@@ -21,80 +19,68 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_DIR/build"
 SCHEME="FocusriteVolumeControl"
 APP_NAME="FocusriteVolumeControl"
+DMG_VOLUME_NAME="Focusrite Volume Control"
+
+# Only override signing when explicitly requested (e.g., CI without certificates)
+SIGN_ARGS=""
+if [ "${ADHOC:-}" = "1" ] || [ "${CI:-}" = "true" ]; then
+    echo "==> Using ad-hoc signing (no certificate)"
+    SIGN_ARGS="CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO"
+fi
 
 echo "==> Cleaning build directory..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# Step 1: Build Release archive
-echo "==> Building Release archive..."
-xcodebuild archive \
-    -project "$PROJECT_DIR/$APP_NAME.xcodeproj" \
+# Build Release
+echo "==> Building Release..."
+xcodebuild -project "$PROJECT_DIR/$APP_NAME.xcodeproj" \
     -scheme "$SCHEME" \
     -configuration Release \
-    -archivePath "$BUILD_DIR/$APP_NAME.xcarchive" \
+    MACOSX_DEPLOYMENT_TARGET=15.0 \
+    $SIGN_ARGS \
+    build \
     -quiet
 
-# Step 2: Export the archive to a .app
-echo "==> Exporting archive..."
-xcodebuild -exportArchive \
-    -archivePath "$BUILD_DIR/$APP_NAME.xcarchive" \
-    -exportPath "$BUILD_DIR/export" \
-    -exportOptionsPlist "$PROJECT_DIR/ExportOptions.plist" \
-    -quiet
-
-# Verify the .app was exported
-if [ ! -d "$BUILD_DIR/export/$APP_NAME.app" ]; then
-    echo "ERROR: Export failed — $APP_NAME.app not found in $BUILD_DIR/export/"
-    echo "This usually means you don't have a Developer ID certificate installed."
-    echo ""
-    echo "Falling back to direct build..."
-    # Fallback: just build and copy from DerivedData
-    xcodebuild -project "$PROJECT_DIR/$APP_NAME.xcodeproj" \
-        -scheme "$SCHEME" \
-        -configuration Release \
-        build \
-        -quiet
-    # Find the built app
-    BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/${APP_NAME}-* \
-        -path "*/Build/Products/Release/${APP_NAME}.app" -maxdepth 5 2>/dev/null | head -1)
-    if [ -z "$BUILT_APP" ]; then
-        echo "ERROR: Could not find built app in DerivedData"
-        exit 1
-    fi
-    mkdir -p "$BUILD_DIR/export"
-    cp -R "$BUILT_APP" "$BUILD_DIR/export/"
+# Find the built app
+BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/${APP_NAME}-* \
+    -path "*/Build/Products/Release/${APP_NAME}.app" -maxdepth 5 2>/dev/null | head -1)
+if [ -z "$BUILT_APP" ]; then
+    echo "ERROR: Could not find built app in DerivedData"
+    exit 1
 fi
+mkdir -p "$BUILD_DIR/export"
+cp -R "$BUILT_APP" "$BUILD_DIR/export/"
 
-# Step 3: Create DMG with drag-to-Applications layout
+# Create DMG with drag-to-Applications layout using create-dmg
 echo "==> Creating DMG..."
-DMG_STAGING="$BUILD_DIR/dmg"
-rm -rf "$DMG_STAGING"
-mkdir -p "$DMG_STAGING"
+DMG_FINAL="$BUILD_DIR/$APP_NAME.dmg"
+rm -f "$DMG_FINAL"
 
-cp -R "$BUILD_DIR/export/$APP_NAME.app" "$DMG_STAGING/"
-ln -s /Applications "$DMG_STAGING/Applications"
+create-dmg \
+    --volname "$DMG_VOLUME_NAME" \
+    --window-pos 200 120 \
+    --window-size 540 380 \
+    --icon-size 80 \
+    --icon "$APP_NAME.app" 140 180 \
+    --app-drop-link 400 180 \
+    --no-internet-enable \
+    "$DMG_FINAL" \
+    "$BUILD_DIR/export/$APP_NAME.app"
 
-hdiutil create \
-    -volname "$APP_NAME" \
-    -srcfolder "$DMG_STAGING" \
-    -ov \
-    -format UDZO \
-    "$BUILD_DIR/$APP_NAME.dmg"
+echo "==> DMG created: $DMG_FINAL"
 
-echo "==> DMG created: $BUILD_DIR/$APP_NAME.dmg"
-
-# Step 4: Optional notarization
+# Optional notarization
 if [ -n "${APPLE_ID:-}" ] && [ -n "${TEAM_ID:-}" ] && [ -n "${APP_PASSWORD:-}" ]; then
     echo "==> Submitting for notarization..."
-    xcrun notarytool submit "$BUILD_DIR/$APP_NAME.dmg" \
+    xcrun notarytool submit "$DMG_FINAL" \
         --apple-id "$APPLE_ID" \
         --team-id "$TEAM_ID" \
         --password "$APP_PASSWORD" \
         --wait
 
     echo "==> Stapling notarization ticket..."
-    xcrun stapler staple "$BUILD_DIR/$APP_NAME.dmg"
+    xcrun stapler staple "$DMG_FINAL"
     echo "==> Notarization complete!"
 else
     echo ""
@@ -102,5 +88,5 @@ else
 fi
 
 echo ""
-echo "Done! DMG is at: $BUILD_DIR/$APP_NAME.dmg"
-echo "Size: $(du -h "$BUILD_DIR/$APP_NAME.dmg" | cut -f1)"
+echo "Done! DMG is at: $DMG_FINAL"
+echo "Size: $(du -h "$DMG_FINAL" | cut -f1)"

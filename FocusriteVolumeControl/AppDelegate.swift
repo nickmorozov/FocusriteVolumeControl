@@ -178,6 +178,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         prefsItem.target = self
         statusMenu.addItem(prefsItem)
 
+        // Report Issue
+        let issueItem = NSMenuItem(title: "Report Issue / Request Feature...", action: #selector(openIssues), keyEquivalent: "")
+        issueItem.target = self
+        statusMenu.addItem(issueItem)
+
         statusMenu.addItem(NSMenuItem.separator())
 
         // Reconnect
@@ -228,7 +233,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showAbout() {
         let alert = NSAlert()
         alert.messageText = "Focusrite Volume Control"
-        alert.informativeText = "Control your Focusrite Scarlett Solo volume with system media keys.\n\nVersion 1.0\n\n© 2026"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+        alert.informativeText = "Control your Focusrite Scarlett Solo volume with system media keys.\n\nVersion \(version) (\(build))\n\n\u{00A9} 2026"
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
         alert.runModal()
@@ -281,6 +288,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         preferencesWindow = window
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func openIssues() {
+        if let url = URL(string: "https://github.com/nickmorozov/FocusriteVolumeControl/issues") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     @objc private func reconnect() {

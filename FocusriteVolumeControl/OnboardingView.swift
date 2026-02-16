@@ -17,37 +17,43 @@ func isAccessibilityGranted() -> Bool {
 }
 
 func isAutomationGranted() -> Bool {
-    let script = "tell application \"System Events\" to return name of first process"
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    process.arguments = ["-e", script]
-    process.standardOutput = FileHandle.nullDevice
-    process.standardError = FileHandle.nullDevice
-    do {
-        try process.run()
-        process.waitUntilExit()
-        return process.terminationStatus == 0
-    } catch {
-        return false
+    // Test automation against Focusrite Control 2 — the actual target app.
+    // Falls back to System Events if FC2 isn't installed/running.
+    let scripts = [
+        "tell application \"Focusrite Control 2\" to name",
+        "tell application \"System Events\" to return name of first process"
+    ]
+    for script in scripts {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+            if process.terminationStatus == 0 { return true }
+        } catch {
+            continue
+        }
     }
+    return false
 }
 
 func areAllPermissionsGranted() -> Bool {
-    isAccessibilityGranted() && isAutomationGranted()
+    // Only gate on Accessibility — it can be reliably checked via AXIsProcessTrusted().
+    // Automation permission is prompted automatically by macOS on first osascript use,
+    // so there's no need to pre-check it (and doing so is unreliable).
+    isAccessibilityGranted()
 }
 
 // MARK: - Onboarding View
 
 struct OnboardingView: View {
     @State private var accessibilityGranted = false
-    @State private var automationGranted = false
     @State private var isChecking = false
 
     var onContinue: () -> Void
-
-    private var allGranted: Bool {
-        accessibilityGranted && automationGranted
-    }
 
     private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
@@ -63,7 +69,7 @@ struct OnboardingView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("This app needs two permissions to work correctly.")
+                Text("This app needs Accessibility permission to intercept volume keys.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -73,7 +79,7 @@ struct OnboardingView: View {
             Divider()
                 .padding(.horizontal, 24)
 
-            // Permission steps
+            // Accessibility permission
             VStack(spacing: 16) {
                 PermissionRow(
                     step: 1,
@@ -86,24 +92,20 @@ struct OnboardingView: View {
                     fallbackAction: openAccessibilitySettings,
                     fallbackTitle: "Open System Settings"
                 )
-
-                Divider()
-                    .padding(.horizontal, 12)
-
-                PermissionRow(
-                    step: 2,
-                    icon: "gearshape.2.fill",
-                    title: "Automation",
-                    description: "Controls Focusrite Control 2 via Apple Events to read and set your volume levels.",
-                    isGranted: automationGranted,
-                    buttonTitle: "Test Automation Access",
-                    action: requestAutomation,
-                    fallbackAction: openAutomationSettings,
-                    fallbackTitle: "Open System Settings"
-                )
             }
             .padding(.vertical, 20)
             .padding(.horizontal, 24)
+
+            // Note about Automation
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                Text("macOS will also ask to allow Automation for Focusrite Control 2 on first use — click OK when prompted.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
 
             Divider()
                 .padding(.horizontal, 24)
@@ -116,18 +118,25 @@ struct OnboardingView: View {
                             ProgressView()
                                 .controlSize(.small)
                         }
-                        Text("Re-check Permissions")
+                        Text("Re-check")
                     }
                 }
                 .buttonStyle(.bordered)
 
                 Spacer()
 
+                Button("Skip") {
+                    onContinue()
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.caption)
+
                 Button("Continue") {
                     onContinue()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!allGranted)
+                .disabled(!accessibilityGranted)
             }
             .padding(24)
         }
@@ -146,7 +155,6 @@ struct OnboardingView: View {
     private func requestAccessibility() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
-        // Recheck after a short delay to pick up the change
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             refreshStatus()
         }
@@ -158,52 +166,14 @@ struct OnboardingView: View {
         }
     }
 
-    private func requestAutomation() {
-        // Running an osascript targeting System Events triggers the automation prompt
-        Task.detached {
-            let script = "tell application \"System Events\" to return name of first process"
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-            process.arguments = ["-e", script]
-            process.standardOutput = FileHandle.nullDevice
-            process.standardError = FileHandle.nullDevice
-            try? process.run()
-            process.waitUntilExit()
-            await MainActor.run {
-                refreshStatus()
-            }
-        }
-    }
-
-    private func openAutomationSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
-            NSWorkspace.shared.open(url)
-        }
-    }
-
     private func recheckPermissions() {
         isChecking = true
-        // Run checks off main thread since osascript is synchronous
-        Task.detached {
-            let accGranted = isAccessibilityGranted()
-            let autoGranted = isAutomationGranted()
-            await MainActor.run {
-                accessibilityGranted = accGranted
-                automationGranted = autoGranted
-                isChecking = false
-            }
-        }
+        accessibilityGranted = isAccessibilityGranted()
+        isChecking = false
     }
 
     private func refreshStatus() {
-        Task.detached {
-            let accGranted = isAccessibilityGranted()
-            let autoGranted = isAutomationGranted()
-            await MainActor.run {
-                accessibilityGranted = accGranted
-                automationGranted = autoGranted
-            }
-        }
+        accessibilityGranted = isAccessibilityGranted()
     }
 }
 
@@ -268,6 +238,10 @@ private struct PermissionRow: View {
                             .controlSize(.small)
                     }
                     .padding(.top, 2)
+
+                    Text("If already enabled, toggle it OFF then ON in System Settings (the app binary changed).")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
             }
         }
