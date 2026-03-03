@@ -1,6 +1,6 @@
 //
 //  FCServerBackendTests.swift
-//  FocusriteVolumeControlTests
+//  Focusrite Volume ControlTests
 //
 //  Tests for FCServerBackend placeholder - verifies it correctly returns
 //  "not implemented" errors for all operations.
@@ -8,7 +8,7 @@
 
 import XCTest
 import Combine
-@testable import FocusriteVolumeControl
+@testable import Focusrite_Volume_Control
 
 final class FCServerBackendTests: XCTestCase {
 

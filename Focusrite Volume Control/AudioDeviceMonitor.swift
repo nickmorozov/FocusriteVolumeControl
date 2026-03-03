@@ -1,6 +1,6 @@
 //
 //  AudioDeviceMonitor.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Monitors the default audio output device using CoreAudio.
 //  Detects whether a Focusrite Scarlett is the active output and

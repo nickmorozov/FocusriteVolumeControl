@@ -1,6 +1,6 @@
 //
 //  FCServerBackend.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Placeholder backend for future Focusrite Control Protocol/Server support.
 //  This will use the AES70/OCA protocol to communicate directly with the device.

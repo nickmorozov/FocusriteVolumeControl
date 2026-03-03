@@ -1,6 +1,6 @@
 //
 //  PopoverView.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Menu bar popover UI - minimal volume-focused design
 //

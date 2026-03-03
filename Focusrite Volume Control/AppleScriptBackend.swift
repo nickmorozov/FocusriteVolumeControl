@@ -1,6 +1,6 @@
 //
 //  AppleScriptBackend.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Controls Focusrite Control 2 via osascript (command-line AppleScript).
 //  Uses the same approach as the working Node.js volume-control.js script.

@@ -1,6 +1,6 @@
 //
 //  OnboardingView.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Permission onboarding wizard — shown on launch until both
 //  Accessibility and Automation permissions are granted.

@@ -1,6 +1,6 @@
 //
 //  KeyboardShortcuts.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Keyboard shortcut model and recorder for custom hotkeys
 //

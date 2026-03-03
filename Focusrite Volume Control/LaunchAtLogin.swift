@@ -1,6 +1,6 @@
 //
 //  LaunchAtLogin.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Manages Launch at Login functionality using SMAppService (macOS 13+)
 //

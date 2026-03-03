@@ -1,6 +1,6 @@
 //
 //  VolumeHUDView.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Floating volume HUD overlay — matches macOS system volume OSD layout.
 //  Device name on top, speaker icons flanking a volume bar.

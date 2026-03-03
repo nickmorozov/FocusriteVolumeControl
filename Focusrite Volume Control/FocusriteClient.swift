@@ -1,6 +1,6 @@
 //
 //  FocusriteClient.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  TCP client for Focusrite Control Protocol
 //

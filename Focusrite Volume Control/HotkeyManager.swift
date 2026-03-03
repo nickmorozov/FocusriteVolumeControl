@@ -1,6 +1,6 @@
 //
 //  HotkeyManager.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Global hotkey registration for custom keyboard shortcuts
 //

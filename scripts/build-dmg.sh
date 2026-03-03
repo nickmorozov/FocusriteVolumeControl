@@ -17,8 +17,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_DIR/build"
-SCHEME="FocusriteVolumeControl"
-APP_NAME="FocusriteVolumeControl"
+SCHEME="Focusrite Volume Control"
+APP_NAME="Focusrite Volume Control"
 DMG_VOLUME_NAME="Focusrite Volume Control"
 
 # Only override signing when explicitly requested (e.g., CI without certificates)
@@ -34,7 +34,7 @@ mkdir -p "$BUILD_DIR"
 
 # Build Release
 echo "==> Building Release..."
-xcodebuild -project "$PROJECT_DIR/$APP_NAME.xcodeproj" \
+xcodebuild -project "$PROJECT_DIR/Focusrite Volume Control.xcodeproj" \
     -scheme "$SCHEME" \
     -configuration Release \
     MACOSX_DEPLOYMENT_TARGET=15.0 \
@@ -43,7 +43,7 @@ xcodebuild -project "$PROJECT_DIR/$APP_NAME.xcodeproj" \
     -quiet
 
 # Find the built app
-BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/${APP_NAME}-* \
+BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/Focusrite_Volume_Control-* \
     -path "*/Build/Products/Release/${APP_NAME}.app" -maxdepth 5 2>/dev/null | head -1)
 if [ -z "$BUILT_APP" ]; then
     echo "ERROR: Could not find built app in DerivedData"

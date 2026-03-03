@@ -1,6 +1,6 @@
 //
 //  PreferencesView.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Preferences window for app settings
 //

@@ -24,26 +24,26 @@ Apple requires notarization for apps distributed outside the store. Without it, 
 ```bash
 # Archive with Developer ID certificate
 xcodebuild archive \
-  -scheme FocusriteVolumeControl \
+  -scheme "Focusrite Volume Control" \
   -configuration Release \
-  -archivePath ./build/FocusriteVolumeControl.xcarchive \
+  -archivePath ./build/Focusrite Volume Control.xcarchive \
   CODE_SIGN_IDENTITY="Developer ID Application"
 
 # Export the archive
 xcodebuild -exportArchive \
-  -archivePath ./build/FocusriteVolumeControl.xcarchive \
+  -archivePath ./build/Focusrite Volume Control.xcarchive \
   -exportPath ./build/export \
   -exportOptionsPlist ExportOptions.plist
 
 # Submit for notarization
-xcrun notarytool submit ./build/export/FocusriteVolumeControl.app.zip \
+xcrun notarytool submit ./build/export/Focusrite Volume Control.app.zip \
   --apple-id your@email.com \
   --team-id YOUR_TEAM_ID \
   --password app-specific-password \
   --wait
 
 # Staple the notarization ticket to the app
-xcrun stapler staple ./build/export/FocusriteVolumeControl.app
+xcrun stapler staple ./build/export/Focusrite Volume Control.app
 ```
 
 ### Step 3 — Payment + Licensing
@@ -84,11 +84,11 @@ Create a `.dmg` with a drag-to-Applications installer:
 ```bash
 # Create a temporary DMG folder
 mkdir -p ./build/dmg
-cp -R ./build/export/FocusriteVolumeControl.app ./build/dmg/
+cp -R ./build/export/Focusrite Volume Control.app ./build/dmg/
 ln -s /Applications ./build/dmg/Applications
 
 # Create DMG
-hdiutil create -volname "FocusriteVolumeControl" \
+hdiutil create -volname "Focusrite Volume Control" \
   -srcfolder ./build/dmg \
   -ov -format UDZO \
   ./build/FocusriteVolumeControl.dmg

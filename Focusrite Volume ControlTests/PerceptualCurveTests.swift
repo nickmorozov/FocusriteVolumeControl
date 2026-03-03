@@ -1,6 +1,6 @@
 //
 //  PerceptualCurveTests.swift
-//  FocusriteVolumeControlTests
+//  Focusrite Volume ControlTests
 //
 //  Tests for the perceptual volume curve conversions (dB ↔ percentage).
 //  The curve is designed so 50% slider = -16 dB (half perceived loudness).
@@ -11,7 +11,7 @@
 //
 
 import XCTest
-@testable import FocusriteVolumeControl
+@testable import Focusrite_Volume_Control
 
 @MainActor
 final class PerceptualCurveTests: XCTestCase {

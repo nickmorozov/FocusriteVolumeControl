@@ -22,13 +22,13 @@ jobs:
 
       - name: Build
         run: >
-          xcodebuild -scheme FocusriteVolumeControl -configuration Debug
+          xcodebuild -scheme "Focusrite Volume Control" -configuration Debug
           MACOSX_DEPLOYMENT_TARGET=15.0
           CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           build
 
       - name: Test
         run: >
-          xcodebuild test -scheme FocusriteVolumeControl -configuration Debug
+          xcodebuild test -scheme "Focusrite Volume Control" -configuration Debug
           MACOSX_DEPLOYMENT_TARGET=15.0
           CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO

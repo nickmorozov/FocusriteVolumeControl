@@ -1,6 +1,6 @@
 //
 //  MockVolumeBackend.swift
-//  FocusriteVolumeControlTests
+//  Focusrite Volume ControlTests
 //
 //  Mock implementation of VolumeBackend for unit testing.
 //  Allows verifying VolumeController behavior without real AppleScript/FC2.
@@ -8,7 +8,7 @@
 
 import Foundation
 import Combine
-@testable import FocusriteVolumeControl
+@testable import Focusrite_Volume_Control
 
 /// Mock backend that tracks all calls and allows controlling responses
 class MockVolumeBackend: VolumeBackend {

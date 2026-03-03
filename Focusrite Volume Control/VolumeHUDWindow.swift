@@ -1,6 +1,6 @@
 //
 //  VolumeHUDWindow.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  NSPanel-based floating HUD window that shows Focusrite volume changes.
 //  Non-activating, click-through, floats above all windows including fullscreen.

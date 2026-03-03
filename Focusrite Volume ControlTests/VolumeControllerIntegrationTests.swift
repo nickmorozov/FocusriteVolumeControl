@@ -1,6 +1,6 @@
 //
 //  VolumeControllerIntegrationTests.swift
-//  FocusriteVolumeControlTests
+//  Focusrite Volume ControlTests
 //
 //  Integration tests verifying full workflows and edge cases.
 //  These tests simulate real user scenarios with the mock backend.
@@ -8,7 +8,7 @@
 
 import XCTest
 import Combine
-@testable import FocusriteVolumeControl
+@testable import Focusrite_Volume_Control
 
 @MainActor
 final class VolumeControllerIntegrationTests: XCTestCase {

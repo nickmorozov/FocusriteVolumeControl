@@ -1,12 +1,12 @@
 //
 //  VolumeBackendTests.swift
-//  FocusriteVolumeControlTests
+//  Focusrite Volume ControlTests
 //
 //  Tests for VolumeBackend types, errors, and state structures.
 //
 
 import XCTest
-@testable import FocusriteVolumeControl
+@testable import Focusrite_Volume_Control
 
 final class VolumeBackendTests: XCTestCase {
 

@@ -1,6 +1,6 @@
 //
 //  ShortcutRecorderView.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  A view for recording keyboard shortcuts
 //

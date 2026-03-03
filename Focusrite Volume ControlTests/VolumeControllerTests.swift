@@ -1,13 +1,13 @@
 //
 //  VolumeControllerTests.swift
-//  FocusriteVolumeControlTests
+//  Focusrite Volume ControlTests
 //
 //  Comprehensive tests for VolumeController covering all actions and conditions.
 //
 
 import XCTest
 import Combine
-@testable import FocusriteVolumeControl
+@testable import Focusrite_Volume_Control
 
 @MainActor
 final class VolumeControllerTests: XCTestCase {

@@ -1,6 +1,6 @@
 //
 //  VolumeController.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  High-level volume control logic for Focusrite devices.
 //  Uses a pluggable backend (AppleScript now, AES70 API later).
@@ -197,8 +197,6 @@ class VolumeController: ObservableObject {
                 let result = await self.backend.setPlaybackVolume(clamped)
                 if case .error(let msg) = result {
                     print("Failed to set playback volume: \(msg)")
-                } else {
-                    await MainActor.run { self.playVolumeFeedback() }
                 }
                 await self.minimizeFC2IfNeeded()
 
@@ -414,6 +412,12 @@ class VolumeController: ObservableObject {
         get { directMonitorEnabled }
     }
 
-    func volumeUp() { playbackVolumeUp() }
-    func volumeDown() { playbackVolumeDown() }
+    func volumeUp() {
+        playVolumeFeedback()
+        playbackVolumeUp()
+    }
+    func volumeDown() {
+        playVolumeFeedback()
+        playbackVolumeDown()
+    }
 }

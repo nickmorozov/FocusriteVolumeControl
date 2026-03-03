@@ -13,7 +13,7 @@ import math
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
-ICON_DIR = os.path.join(PROJECT_DIR, "FocusriteVolumeControl", "Assets.xcassets", "AppIcon.appiconset")
+ICON_DIR = os.path.join(PROJECT_DIR, "Focusrite Volume Control", "Assets.xcassets", "AppIcon.appiconset")
 
 # Required sizes: (width, scale, filename)
 ICON_SIZES = [

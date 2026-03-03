@@ -12,27 +12,27 @@
 			containerPortal = 01A89D4F2F280BA90084DBD8 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 01A89D562F280BA90084DBD8;
-			remoteInfo = FocusriteVolumeControl;
+			remoteInfo = "Focusrite Volume Control";
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		01A89D572F280BA90084DBD8 /* FocusriteVolumeControl.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusriteVolumeControl.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		01A89D652F280BA90084DBD8 /* FocusriteVolumeControlTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FocusriteVolumeControlTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		01A89D572F280BA90084DBD8 /* Focusrite Volume Control.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Focusrite Volume Control.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		01A89D652F280BA90084DBD8 /* Focusrite Volume ControlTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Focusrite Volume ControlTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		01A89DBA2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "FocusriteVolumeControl" target */ = {
+		01A89DBA2F294E950084DBD8 /* Exceptions for "Focusrite Volume Control" folder in "Focusrite Volume Control" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				TODO.txt,
 			);
-			target = 01A89D562F280BA90084DBD8 /* FocusriteVolumeControl */;
+			target = 01A89D562F280BA90084DBD8 /* Focusrite Volume Control */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		01A89DBB2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "Compile Sources" phase from "FocusriteVolumeControl" target */ = {
+		01A89DBB2F294E950084DBD8 /* Exceptions for "Focusrite Volume Control" folder in "Compile Sources" phase from "Focusrite Volume Control" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = 01A89D532F280BA90084DBD8 /* Sources */;
 			membershipExceptions = (
@@ -42,18 +42,18 @@
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		01A89D592F280BA90084DBD8 /* FocusriteVolumeControl */ = {
+		01A89D592F280BA90084DBD8 /* Focusrite Volume Control */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				01A89DBA2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "FocusriteVolumeControl" target */,
-				01A89DBB2F294E950084DBD8 /* Exceptions for "FocusriteVolumeControl" folder in "Compile Sources" phase from "FocusriteVolumeControl" target */,
+				01A89DBA2F294E950084DBD8 /* Exceptions for "Focusrite Volume Control" folder in "Focusrite Volume Control" target */,
+				01A89DBB2F294E950084DBD8 /* Exceptions for "Focusrite Volume Control" folder in "Compile Sources" phase from "Focusrite Volume Control" target */,
 			);
-			path = FocusriteVolumeControl;
+			path = "Focusrite Volume Control";
 			sourceTree = "<group>";
 		};
-		01A89D662F280BA90084DBD8 /* FocusriteVolumeControlTests */ = {
+		01A89D662F280BA90084DBD8 /* Focusrite Volume ControlTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = FocusriteVolumeControlTests;
+			path = "Focusrite Volume ControlTests";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -79,8 +79,8 @@
 		01A89D4E2F280BA90084DBD8 = {
 			isa = PBXGroup;
 			children = (
-				01A89D592F280BA90084DBD8 /* FocusriteVolumeControl */,
-				01A89D662F280BA90084DBD8 /* FocusriteVolumeControlTests */,
+				01A89D592F280BA90084DBD8 /* Focusrite Volume Control */,
+				01A89D662F280BA90084DBD8 /* Focusrite Volume ControlTests */,
 				01A89D582F280BA90084DBD8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +88,8 @@
 		01A89D582F280BA90084DBD8 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				01A89D572F280BA90084DBD8 /* FocusriteVolumeControl.app */,
-				01A89D652F280BA90084DBD8 /* FocusriteVolumeControlTests.xctest */,
+				01A89D572F280BA90084DBD8 /* Focusrite Volume Control.app */,
+				01A89D652F280BA90084DBD8 /* Focusrite Volume ControlTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,9 +97,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		01A89D562F280BA90084DBD8 /* FocusriteVolumeControl */ = {
+		01A89D562F280BA90084DBD8 /* Focusrite Volume Control */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 01A89D622F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "FocusriteVolumeControl" */;
+			buildConfigurationList = 01A89D622F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "Focusrite Volume Control" */;
 			buildPhases = (
 				01A89D532F280BA90084DBD8 /* Sources */,
 				01A89D542F280BA90084DBD8 /* Frameworks */,
@@ -110,18 +110,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				01A89D592F280BA90084DBD8 /* FocusriteVolumeControl */,
+				01A89D592F280BA90084DBD8 /* Focusrite Volume Control */,
 			);
-			name = FocusriteVolumeControl;
+			name = "Focusrite Volume Control";
 			packageProductDependencies = (
 			);
-			productName = FocusriteVolumeControl;
-			productReference = 01A89D572F280BA90084DBD8 /* FocusriteVolumeControl.app */;
+			productName = "Focusrite Volume Control";
+			productReference = 01A89D572F280BA90084DBD8 /* Focusrite Volume Control.app */;
 			productType = "com.apple.product-type.application";
 		};
-		01A89D6A2F280BA90084DBD8 /* FocusriteVolumeControlTests */ = {
+		01A89D6A2F280BA90084DBD8 /* Focusrite Volume ControlTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 01A89D6D2F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "FocusriteVolumeControlTests" */;
+			buildConfigurationList = 01A89D6D2F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "Focusrite Volume ControlTests" */;
 			buildPhases = (
 				01A89D672F280BA90084DBD8 /* Sources */,
 				01A89D682F280BA90084DBD8 /* Frameworks */,
@@ -133,13 +133,13 @@
 				01A89D6F2F280BA90084DBD8 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				01A89D662F280BA90084DBD8 /* FocusriteVolumeControlTests */,
+				01A89D662F280BA90084DBD8 /* Focusrite Volume ControlTests */,
 			);
-			name = FocusriteVolumeControlTests;
+			name = "Focusrite Volume ControlTests";
 			packageProductDependencies = (
 			);
-			productName = FocusriteVolumeControlTests;
-			productReference = 01A89D652F280BA90084DBD8 /* FocusriteVolumeControlTests.xctest */;
+			productName = "Focusrite Volume ControlTests";
+			productReference = 01A89D652F280BA90084DBD8 /* Focusrite Volume ControlTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -161,7 +161,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 01A89D522F280BA90084DBD8 /* Build configuration list for PBXProject "FocusriteVolumeControl" */;
+			buildConfigurationList = 01A89D522F280BA90084DBD8 /* Build configuration list for PBXProject "Focusrite Volume Control" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -175,8 +175,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				01A89D562F280BA90084DBD8 /* FocusriteVolumeControl */,
-				01A89D6A2F280BA90084DBD8 /* FocusriteVolumeControlTests */,
+				01A89D562F280BA90084DBD8 /* Focusrite Volume Control */,
+				01A89D6A2F280BA90084DBD8 /* Focusrite Volume ControlTests */,
 			);
 		};
 /* End PBXProject section */
@@ -218,7 +218,7 @@
 /* Begin PBXTargetDependency section */
 		01A89D6F2F280BA90084DBD8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 01A89D562F280BA90084DBD8 /* FocusriteVolumeControl */;
+			target = 01A89D562F280BA90084DBD8 /* Focusrite Volume Control */;
 			targetProxy = 01A89D6E2F280BA90084DBD8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -358,7 +358,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "FocusriteVolumeControl needs to send Apple events to Focusrite Control 2 to adjust volume and mute settings.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Focusrite Volume Control needs to send Apple events to Focusrite Control 2 to adjust volume and mute settings.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -391,7 +391,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSAppleEventsUsageDescription = "FocusriteVolumeControl needs to send Apple events to Focusrite Control 2 to adjust volume and mute settings.";
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Focusrite Volume Control needs to send Apple events to Focusrite Control 2 to adjust volume and mute settings.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -427,7 +427,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FocusriteVolumeControl.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FocusriteVolumeControl";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Focusrite Volume Control.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Focusrite Volume Control";
 			};
 			name = Debug;
 		};
@@ -448,14 +448,14 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FocusriteVolumeControl.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FocusriteVolumeControl";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Focusrite Volume Control.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Focusrite Volume Control";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		01A89D522F280BA90084DBD8 /* Build configuration list for PBXProject "FocusriteVolumeControl" */ = {
+		01A89D522F280BA90084DBD8 /* Build configuration list for PBXProject "Focusrite Volume Control" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				01A89D602F280BA90084DBD8 /* Debug */,
@@ -464,7 +464,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		01A89D622F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "FocusriteVolumeControl" */ = {
+		01A89D622F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "Focusrite Volume Control" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				01A89D632F280BA90084DBD8 /* Debug */,
@@ -473,7 +473,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		01A89D6D2F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "FocusriteVolumeControlTests" */ = {
+		01A89D6D2F280BA90084DBD8 /* Build configuration list for PBXNativeTarget "Focusrite Volume ControlTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				01A89D6B2F280BA90084DBD8 /* Debug */,

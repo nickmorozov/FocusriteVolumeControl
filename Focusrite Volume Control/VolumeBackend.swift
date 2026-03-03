@@ -1,6 +1,6 @@
 //
 //  VolumeBackend.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  Protocol defining the interface for volume control backends.
 //  This allows swapping between AppleScript UI automation and future AES70 API.

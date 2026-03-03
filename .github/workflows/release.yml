@@ -15,15 +15,15 @@ jobs:
 
       - name: Build Release
         run: >
-          xcodebuild -scheme FocusriteVolumeControl -configuration Release
+          xcodebuild -scheme "Focusrite Volume Control" -configuration Release
           MACOSX_DEPLOYMENT_TARGET=15.0
           CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           build
 
       - name: Package DMG
         run: |
-          BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/FocusriteVolumeControl-* \
-            -path "*/Build/Products/Release/FocusriteVolumeControl.app" -maxdepth 5 | head -1)
+          BUILT_APP=$(find ~/Library/Developer/Xcode/DerivedData/Focusrite_Volume_Control-* \
+            -path "*/Build/Products/Release/Focusrite Volume Control.app" -maxdepth 5 | head -1)
           mkdir -p build/dmg
           cp -R "$BUILT_APP" build/dmg/
           ln -s /Applications build/dmg/Applications

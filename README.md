@@ -13,7 +13,7 @@ brew install --cask focusrite-volume-control
 
 ### Manual
 
-Download the latest DMG from [Releases](https://github.com/enum-solutions-inc/FocusriteVolumeControl/releases/latest) and drag to Applications.
+Download the latest DMG from [Releases](https://github.com/enum-solutions-inc/focusrite-volume-control/releases/latest) and drag to Applications.
 
 ## Requirements
 
@@ -37,7 +37,7 @@ The app drives Focusrite Control 2 via UI automation (AppleScript + Accessibilit
 ## Build from source
 
 ```bash
-xcodebuild -scheme FocusriteVolumeControl -configuration Release \
+xcodebuild -scheme "Focusrite Volume Control" -configuration Release \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
 ```
 

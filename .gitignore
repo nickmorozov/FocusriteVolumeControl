@@ -62,7 +62,7 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-/FocusriteVolumeControl.iml
+/Focusrite Volume Control.iml
 
 # Build artifacts
 build/

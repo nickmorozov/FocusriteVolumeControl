@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "01A89D562F280BA90084DBD8"
-               BuildableName = "FocusriteVolumeControl.app"
-               BlueprintName = "FocusriteVolumeControl"
-               ReferencedContainer = "container:FocusriteVolumeControl.xcodeproj">
+               BuildableName = "Focusrite Volume Control.app"
+               BlueprintName = "Focusrite Volume Control"
+               ReferencedContainer = "container:Focusrite Volume Control.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -36,9 +36,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "01A89D6A2F280BA90084DBD8"
-               BuildableName = "FocusriteVolumeControlTests.xctest"
-               BlueprintName = "FocusriteVolumeControlTests"
-               ReferencedContainer = "container:FocusriteVolumeControl.xcodeproj">
+               BuildableName = "Focusrite Volume ControlTests.xctest"
+               BlueprintName = "Focusrite Volume ControlTests"
+               ReferencedContainer = "container:Focusrite Volume Control.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -58,9 +58,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "01A89D562F280BA90084DBD8"
-            BuildableName = "FocusriteVolumeControl.app"
-            BlueprintName = "FocusriteVolumeControl"
-            ReferencedContainer = "container:FocusriteVolumeControl.xcodeproj">
+            BuildableName = "Focusrite Volume Control.app"
+            BlueprintName = "Focusrite Volume Control"
+            ReferencedContainer = "container:Focusrite Volume Control.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -75,9 +75,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "01A89D562F280BA90084DBD8"
-            BuildableName = "FocusriteVolumeControl.app"
-            BlueprintName = "FocusriteVolumeControl"
-            ReferencedContainer = "container:FocusriteVolumeControl.xcodeproj">
+            BuildableName = "Focusrite Volume Control.app"
+            BlueprintName = "Focusrite Volume Control"
+            ReferencedContainer = "container:Focusrite Volume Control.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

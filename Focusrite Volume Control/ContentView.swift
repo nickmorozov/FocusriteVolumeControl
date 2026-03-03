@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  FocusriteVolumeControl
+//  Focusrite Volume Control
 //
 //  This file is not used - see PopoverView.swift for the main UI
 //
