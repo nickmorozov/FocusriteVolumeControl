@@ -51,7 +51,10 @@ class VolumeController: ObservableObject {
 
     let stepSize: Double = 6.25  // Matches macOS system: 16 steps across full range (100/16)
     @Published var keepFC2Minimized: Bool = true  // Minimize FC2 on connect (user can unminimize manually)
-    @Published var playVolumeSound: Bool = false  // Play system sound on volume change (HUD provides visual feedback)
+    /// Reads macOS "Play feedback when volume is changed" from System Settings → Sound
+    var playVolumeSound: Bool {
+        UserDefaults.standard.bool(forKey: "com.apple.sound.beep.feedback")
+    }
     @Published var ensureDirectMonitorOn: Bool = true  // Auto-enable Direct Monitor before volume changes
     @Published var allowGain: Bool = false  // Allow volume above 0dB (up to +6dB)
     @Published var backendType: BackendType = .appleScript  // Which backend to use

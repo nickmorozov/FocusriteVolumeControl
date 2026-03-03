@@ -50,16 +50,6 @@ struct PreferencesView: View {
                                 .padding(.leading, 20)
                         }
 
-                        // Play Volume Sound toggle with subtitle
-                        VStack(alignment: .leading, spacing: 2) {
-                            Toggle("Play Chime On Volume Change", isOn: $volumeController.playVolumeSound)
-
-                            Text("Similar to system behaviour")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.leading, 20)
-                        }
-
                         // Allow Gain toggle with subtitle
                         VStack(alignment: .leading, spacing: 2) {
                             Toggle("Allow Gain (0 to +6 dB)", isOn: $volumeController.allowGain)
