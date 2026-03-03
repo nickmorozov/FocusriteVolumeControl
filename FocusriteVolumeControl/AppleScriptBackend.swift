@@ -486,9 +486,29 @@ class AppleScriptBackend: VolumeBackend {
                     let errorData = stderr.fileHandleForReading.readDataToEndOfFile()
 
                     if process.terminationStatus != 0 {
-                        let errorMessage = String(data: errorData, encoding: .utf8) ?? "Unknown error"
-                        logger.error("❌ osascript failed: \(errorMessage, privacy: .public) | script: \(scriptPreview, privacy: .public)")
-                        continuation.resume(throwing: VolumeBackendError.appleScriptError(errorMessage))
+                        let rawError = String(data: errorData, encoding: .utf8) ?? "Unknown error"
+                        logger.error("❌ osascript failed: \(rawError, privacy: .public) | script: \(scriptPreview, privacy: .public)")
+
+                        // Parse osascript error: "138:237: execution error: System Events got an error: ... (-600)"
+                        // Extract the meaningful part after "execution error: "
+                        var cleanMessage = rawError.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let range = cleanMessage.range(of: "execution error: ") {
+                            cleanMessage = String(cleanMessage[range.upperBound...])
+                        }
+                        // Strip trailing error codes like "(-600)" and period
+                        cleanMessage = cleanMessage.replacingOccurrences(
+                            of: #"\s*\(-?\d+\)\s*$"#, with: "", options: .regularExpression)
+
+                        // Map known errors to specific types
+                        let error: VolumeBackendError
+                        if cleanMessage.contains("Can\u{2019}t get process") || cleanMessage.contains("(-600)") || rawError.contains("(-600)") {
+                            error = .fc2NotRunning
+                        } else if cleanMessage.contains("Can\u{2019}t get window") || cleanMessage.contains("count of windows") {
+                            error = .fc2WindowNotFound
+                        } else {
+                            error = .appleScriptError(cleanMessage)
+                        }
+                        continuation.resume(throwing: error)
                     } else {
                         let output = String(data: outputData, encoding: .utf8) ?? ""
                         continuation.resume(returning: output.trimmingCharacters(in: .whitespacesAndNewlines))
