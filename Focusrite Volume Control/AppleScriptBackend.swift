@@ -41,14 +41,20 @@ class AppleScriptBackend: VolumeBackend {
     // MARK: - Connection
 
     func connect() async -> VolumeResult {
-        // Ensure FC2 is running and Direct tab is active
-        let result = await ensureDirectTab()
-        if case .error = result {
-            return result
+        // Ensure FC2 is running and Direct tab is active (retry for startup timing)
+        var lastError: String = "Unknown error"
+        for attempt in 1...3 {
+            let result = await ensureDirectTab()
+            if case .success = result {
+                return await refresh()
+            }
+            if case .error(let msg) = result {
+                lastError = msg
+                logger.info("⏳ Connect attempt \(attempt) failed: \(msg, privacy: .public), retrying...")
+            }
+            try? await Task.sleep(for: .seconds(1))
         }
-
-        // Refresh state
-        return await refresh()
+        return .error(lastError)
     }
 
     func disconnect() {
@@ -291,12 +297,35 @@ class AppleScriptBackend: VolumeBackend {
             logger.info("✅ FC2 already running")
         }
 
-        // Switch to Direct tab
+        // Check if Direct tab is already active (works even with minimized window)
+        let tabCheckScript = """
+        tell application "System Events"
+            tell process "\(fc2Process)"
+                if (count of windows) = 0 then
+                    return "no_window"
+                end if
+                try
+                    get group "Playback 1 - 2" of group 5 of window "\(fc2Process)"
+                    return "ready"
+                on error
+                    return "wrong_tab"
+                end try
+            end tell
+        end tell
+        """
+
+        let tabStatus = try await runOsascript(tabCheckScript)
+
+        if tabStatus == "ready" {
+            logger.info("✅ FC2 already on Direct tab")
+            return
+        }
+
+        // Direct tab not active — need to switch
         logger.info("🔀 Switching to Direct tab...")
         let switchScript = """
         tell application "System Events"
             tell process "\(fc2Process)"
-                -- Ensure window exists
                 if (count of windows) > 0 then
                     click checkbox "Direct" of group "Navigation bar" of window "\(fc2Process)"
                 end if
