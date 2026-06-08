@@ -45,7 +45,7 @@ jobs:
           body: |
             **Homebrew:**
             ```
-            brew tap enum-solutions-inc/focusrite-volume-control
+            brew tap enum-labs/focusrite-volume-control
             brew install --cask focusrite-volume-control
             ```
 
@@ -57,7 +57,7 @@ jobs:
           DMG_SHA256: ${{ steps.sha.outputs.sha256 }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          git clone https://x-access-token:${GH_TOKEN}@github.com/enum-solutions-inc/homebrew-focusrite-volume-control.git tap
+          git clone https://x-access-token:${GH_TOKEN}@github.com/enum-labs/homebrew-focusrite-volume-control.git tap
           cd tap
           sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Casks/focusrite-volume-control.rb
           sed -i '' "s/sha256 \".*\"/sha256 \"${DMG_SHA256}\"/" Casks/focusrite-volume-control.rb

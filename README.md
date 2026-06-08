@@ -17,13 +17,13 @@ A macOS menu bar app that lets you control your Focusrite Scarlett Solo volume w
 ### Homebrew
 
 ```bash
-brew tap enum-solutions-inc/focusrite-volume-control
+brew tap enum-labs/focusrite-volume-control
 brew install --cask focusrite-volume-control
 ```
 
 ### Manual
 
-Download the latest DMG from [Releases](https://github.com/enum-solutions-inc/focusrite-volume-control/releases/latest) and drag to Applications.
+Download the latest DMG from [Releases](https://github.com/enum-labs/focusrite-volume-control/releases/latest) and drag to Applications.
 
 ## Requirements
 
